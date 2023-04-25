@@ -11,7 +11,7 @@ BRUSH_LENGTH = 0.115 + .1
 HAND_LENGTH = .031
 FOREARM_LENGTH = .149
 UPPERARM_LENGTH = .148
-ELBOW_LATERAL_OFFSET = 0.03205
+ELBOW_LATERAL_OFFSET = -0.03205
 BASE_TO_SHOULDER = 0.06525
 
 # Lynch & Park M transforms and screw axes
@@ -63,6 +63,11 @@ def fk(theta, rest_Ts=REST_TRANSFORMS, screw_axes=SCREW_AXES):
         T = T @ R
 
     return T, Ts
+def fk_deg(theta, **kwargs):
+    """
+    Same as fk, but takes angles in degrees.
+    """
+    return fk(np.deg2rad(theta), **kwargs)
 
 # Jacobian calculation
 def jacobian(theta, rest_Ts=REST_TRANSFORMS, screw_axes=SCREW_AXES):
@@ -93,7 +98,37 @@ def jacobian(theta, rest_Ts=REST_TRANSFORMS, screw_axes=SCREW_AXES):
         J[:, i] = util.Ad(eTi) @ screw_axes[i]
 
     return J
+def jacobian_deg(theta, **kwargs):
+    """
+    Same as jacobian, but takes angles in degrees, and the twists are in degrees.
+    """
+    jac = jacobian(np.deg2rad(theta), **kwargs)
+    # J * dq = dT, so J has units of [T] / rad, so we need to convert to [T] / deg
+    return np.deg2rad(jac)
 
+
+def joint_vels(theta1, theta2, max_vel=None):
+
+    wT1, _ = fk(theta1)
+    wT2, _ = fk(theta2)
+    J = jacobian(theta1)
+
+    _1T2 = np.linalg.inv(wT1) @ wT2
+    dT = util.logm_to_vector(scipy.linalg.logm(_1T2))
+    # ignore spin direction
+    ret = np.linalg.lstsq(J, dT, rcond=None)[0]
+
+    if True:
+        ret = np.array(theta2) - np.array(theta1)
+
+    if max_vel is not None:
+        ret = ret / np.max(np.abs(ret)) * max_vel
+    return ret
+
+def joint_vels_deg(theta1, theta2, max_vel=None):
+    if max_vel is not None:
+        max_vel = np.deg2rad(max_vel)
+    return np.rad2deg(joint_vels(np.deg2rad(theta1), np.deg2rad(theta2), max_vel))
 
 def ik(T,
        theta0=[0.1, 0.1, 1.0, 0.1, 0.1], # not zeros because of singularity, and prefer elbow_down
@@ -177,6 +212,10 @@ def ik(T,
 
     # If we reached the maximum number of iterations without convergence, return failure
     return False, theta
+def ik_deg(T, **kwargs):
+    """Same as ik, but returns angles in degrees."""
+    success, theta = ik(T, **kwargs)
+    return success, np.rad2deg(theta)
 
 
 ######################## Visualization ########################

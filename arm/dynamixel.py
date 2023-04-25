@@ -9,11 +9,11 @@ Artist-In-Residence program, and ME Capstone team Spring 2023.
 Usage:
 
 ```
-with Arm(port=port, baudrate=baudrate) as arm:  # args like serial.Serial
-    arm.ping(2)  # pings motor number 2
-    print(arm.read_all_joint_angles_deg())  # prints the list of all 6 joint angles
-    arm.command_angle(2, 90)  # sets joint 2 to 90 degrees
-    arm.go_to_blocking([0, 0, 0, 0, 0], tol=tol, timeout=timeout)  # moves to home position
+with AX12s(port=port, baudrate=baudrate) as servos:  # args like serial.Serial
+    servos.ping(2)  # pings motor number 2
+    print(servos.read_all_joint_angles_deg())  # prints the list of all 6 joint angles
+    servos.command_angle(2, 90)  # sets joint 2 to 90 degrees
+    servos.command_angles_deg([0, 0, 0, 0, 0])  # sets all joints to 0 degrees
 ```
 
 See also gerry01_test_servos.ipynb for a Jupyter notebook with more examples.
@@ -100,12 +100,13 @@ assert decode_packet(exp_packet) == exp_id_instr_data, 'decode_packet failed uni
 
 
 class Dynamixel(serial.Serial):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, write_packet_delay=0.001, **kwargs):
         super().__init__(*args, **kwargs, timeout=0.1)
         self.buffer = bytearray()
+        self.write_packet_delay = write_packet_delay
     def write_packet(self, *args):
         toret = self.write(create_packet(*args))
-        time.sleep(0.001)
+        time.sleep(self.write_packet_delay)
         return toret
     def ping(self, id: Byte):
         return self.write_packet(id, 1, [])
@@ -186,30 +187,74 @@ class AX12(Dynamixel):
 
 
 def int2bytes(x: int, n: int):
+    x = int(x)
     return [x >> (i * 8) & 0xff for i in range(n)]
-def deg2counts(angle: float):
+def deg2counts(id, angle: float):
+    if id == 3 or id == 5:
+        angle = -angle
     return int((angle + 150) / 300 * 1023)
-def counts2deg(counts: int):
-    return counts / 1023 * 300 - 150
+def counts2deg(id, counts: int):
+    return (counts / 1023 * 300 - 150) * (-1 if id == 3 or id == 5 else 1)
 
 
-class Arm(AX12):
-    def __init__(self, *args, **kwargs):
+class AX12s(AX12):
+    def __init__(self, *args, read_all_timeout=1.0, **kwargs):
         super().__init__(*args, **kwargs)
+        self.read_all_timeout = read_all_timeout
         self.write_all(AX12.MOVING_SPEED, int2bytes(25, 2))
 
     def write_all(self, addr: Byte, value: Data, nbytes:Optional[int]=None):
         if nbytes is not None and isinstance(value, int):
             value = int2bytes(value, nbytes)
         return self.sync_write(addr, [(i, value) for i in range(6)])
-    def read_all(self, addr: Byte, len: Byte = 1):
+    def read_all(self, addr: Byte, length: Byte = 1):
         for id in range(6):
-            self.read_data(id, addr, len)
-        return list(self.read_all_msgs())
-    def read_all_joint_angles_deg(self,):
-        return [counts2deg(m.data.value()) for m in self.read_all(AX12.PRESENT_POSITION, 2)]
+            self.read_data(id, addr, length)
+        ret = []
+        tstart = time.time()
+        while len(ret) < 6 and time.time() - tstart < self.read_all_timeout:
+            ret += list(self.read_all_msgs())
+        return ret
+
+    def enable_all(self):
+        return self.write_all(AX12.TORQUE_ENABLE, 1)
+    def disable_all(self):
+        return self.write_all(AX12.TORQUE_ENABLE, 0)
+    def set_speed(self, speed_counts):
+        return self.write_all(AX12.MOVING_SPEED, int2bytes(speed_counts, 2))
+    def set_speeds(self, speeds_counts):
+        assert len(speeds_counts) == 6, 'Must have 6 speeds'
+        return self.sync_write(AX12.MOVING_SPEED,
+                               [(i, int2bytes(abs(s), 2)) for i, s in enumerate(speeds_counts)])
+
+    def set_compliance_margins(self, margin: int):
+        assert margin < 256, 'Margin must be less than 256'
+        return [
+            self.write_all(AX12.CW_COMPLIANCE_MARGIN, margin, nbytes=1),
+            self.write_all(AX12.CCW_COMPLIANCE_MARGIN, margin, nbytes=1)
+        ]
+    def set_compliance_slopes(self, slope: int):
+        assert slope < 256, 'Slope must be less than 256'
+        return [
+            self.write_all(AX12.CW_COMPLIANCE_SLOPE, slope, nbytes=1),
+            self.write_all(AX12.CCW_COMPLIANCE_SLOPE, slope, nbytes=1)
+        ]
+
+    def read_all_joint_angles_deg(self):
+        return [
+            counts2deg(id, m.data.value())
+            for id, m in enumerate(self.read_all(AX12.PRESENT_POSITION, 2))
+        ]
+    def joint_angles_deg(self):
+        ret = self.read_all_joint_angles_deg()
+        assert len(ret) == 6, f'Error reading joint angles: {ret = }'
+        return [ret[0], (ret[1] - ret[2]) / 2, ret[3], ret[4], ret[5]]
+    def joint_angles_string(self):
+        joint_angles = self.joint_angles_deg()
+        return ' '.join([f'{angle:3.0f}' for angle in joint_angles])
+
     def command_angle(self, id: Byte, angle: float):
-        return self.write_data(id, AX12.GOAL_POSITION, int2bytes(deg2counts(angle), 2))
+        return self.write_data(id, AX12.GOAL_POSITION, int2bytes(deg2counts(id, angle), 2))
     def _command_angles_counts(self, *angles):
         return self.sync_write(AX12.GOAL_POSITION,
                                [(i, int2bytes(angle, 2)) for i, angle in enumerate(angles)])
@@ -218,34 +263,5 @@ class Arm(AX12):
         assert min(angles) >= -150, 'Angles should range from -150 to 150'
         assert max(angles) <= 150, 'Angles should range from -150 to 150'
         angles = [angles[0], angles[1], -angles[1], *angles[2:]]
-        angles = [deg2counts(angle) for angle in angles]
+        angles = [deg2counts(id, angle) for id, angle in enumerate(angles)]
         return self._command_angles_counts(*angles)
-
-    # Go to setpoint
-    def reached_goal(self, goal, tol=5):
-        if len(goal) == 5:
-            goal = [goal[0], goal[1], -goal[1], *goal[2:]]
-        elif len(goal) != 6:
-            raise ValueError('goal must be length 5 or 6')
-        try:
-            actual = self.read_all_joint_angles_deg()
-        except AssertionError as e:
-            print('warning: assertion error in reached_goal: ', e)
-            return False
-        return all([abs(g - a) < tol for g, a in zip(goal, actual)])
-    def go_to_blocking(self, goal, tol=5, timeout=None, cb=None):
-        if tol is None:
-            tol = 5
-        self.command_angles_deg(*goal)
-        tstart = time.time()
-        while not self.reached_goal(goal, tol=tol):
-            self.command_angles_deg(*goal)
-            if cb is not None:
-                try:
-                    cb()
-                except AssertionError as e:
-                    print('warning: callback had an assertion error in go_to_blocking: ', e)
-            time.sleep(0.1)
-            if timeout is not None and time.time() - tstart > timeout:
-                return False
-        return True

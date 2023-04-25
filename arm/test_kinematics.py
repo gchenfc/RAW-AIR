@@ -95,7 +95,7 @@ class TestKinematics(unittest.TestCase):
         success, ik_result = kinematics.ik(pose_paint_dip, ignore_spin_axis=True, elbow_mode='pos')
         assert success, f'IK failed: {ik_result}'
 
-        thetas_expected = [-1.609439e-01, 1.180903e-01, 1.437257e+00, 3.98000e-08, 1.586245e+00]
+        thetas_expected = [1.609439e-01, 1.180903e-01, 1.437257e+00, 3.98000e-08, 1.586245e+00]
         np.testing.assert_allclose(ik_result, thetas_expected, rtol=1e-6, atol=1e-6)
 
 if __name__ == '__main__':
