@@ -64,25 +64,28 @@ def decode_packet(packet: bytes) -> Status:
     return Status(id, error, StatusParams(data))
 
 
-def first_packet_length(packet: bytes) -> bytes:
+def first_packet_length(packet: bytes, expected_len: int = None) -> bytes:
     assert packet[0] == 0xFF and packet[1] == 0xFF, 'Wrong header'
     if len(packet) < 4:
         return None
     length = packet[3]
+    if expected_len is not None and length != expected_len:
+        print('\033[93m', "warning: packet length didn't match expected length", '\033[0m')
+        length = expected_len  # just try to hack it
     if len(packet) < length + 4:
         return None
     return length + 4
 
 
-def peak_first_packet(packet: bytearray) -> bytes:
-    length = first_packet_length(packet)
+def peak_first_packet(packet: bytearray, expected_len: int = None) -> bytes:
+    length = first_packet_length(packet, expected_len=expected_len)
     if length is None:
         return None
     return packet[:length]
 
 
-def pop_first_packet(packet: bytearray) -> bytes:
-    length = first_packet_length(packet)
+def pop_first_packet(packet: bytearray, expected_len: int = None) -> bytes:
+    length = first_packet_length(packet, expected_len=expected_len)
     if length is None:
         return None
     toret = packet[:length]
@@ -100,10 +103,18 @@ assert decode_packet(exp_packet) == exp_id_instr_data, 'decode_packet failed uni
 
 
 class Dynamixel(serial.Serial):
-    def __init__(self, *args, write_packet_delay=0.001, **kwargs):
+    def __init__(self, *args, write_packet_delay=0.001, print_warnings=True, **kwargs):
         super().__init__(*args, **kwargs, timeout=0.1)
         self.buffer = bytearray()
         self.write_packet_delay = write_packet_delay
+        self.VALID_IDS = set(range(6))
+        self.warn = (lambda *args, **kwargs: print('\033[93m', *args, '\033[0m', **kwargs)
+                    ) if print_warnings else lambda *args, **kwargs: None
+
+    def __exit__(self, *exc):
+        super().__exit__(*exc)
+        if self.write_packet_delay > 0.05: # we're probably using bluetooth
+            time.sleep(1)  # Give the bluetooth some time to close properly
     def write_packet(self, *args):
         toret = self.write(create_packet(*args))
         time.sleep(self.write_packet_delay)
@@ -131,23 +142,32 @@ class Dynamixel(serial.Serial):
                 dat = [dat]
             data += [id, *dat]
         return self.write_packet(0xFE, 0x83, [addr, len(dat), *data])
-    def read_all_msgs(self):
+    def read_all_msgs(self, exp_data_bytes=None, strict_ids=True):
+        exp_len = exp_data_bytes + 2 if exp_data_bytes is not None else None
         self.buffer += self.read(self.in_waiting)
         while len(self.buffer) >= 4:
-            while self.buffer[0] != 0xFF or self.buffer[1] != 0xFF:
-                print('Lost data!', self.buffer[0])
+            while ((self.buffer[0] != 0xFF) or (self.buffer[1] != 0xFF) or
+                   (strict_ids and (self.buffer[2] not in self.VALID_IDS))):
+                # self.warn('Lost data!', self.buffer[0])
                 self.buffer.pop(0)  # Lost data!
                 if len(self.buffer) < 4:
                     return None
-            packet = pop_first_packet(self.buffer)
-            if packet is None:
-                return None
-            yield decode_packet(packet)
+            try:
+                packet = pop_first_packet(self.buffer, expected_len=exp_len)
+                if packet is None:
+                    return None
+                yield decode_packet(packet)
+            except AssertionError as e:
+                self.warn('warning: assertion error in read_all_msgs: ', e)
+                continue
         return None
-    def read_next_msg(self):
-        for msg in self.read_all_msgs():
+    def read_next_msg(self, exp_data_bytes=None, strict_ids=True):
+        for msg in self.read_all_msgs(exp_data_bytes=exp_data_bytes, strict_ids=strict_ids):
             return msg
         return None
+    def clear_buffer(self):
+        self.read(self.in_waiting)
+        self.buffer.clear()
 
 class AX12(Dynamixel):
     # Control table
@@ -213,7 +233,24 @@ class AX12s(AX12):
         ret = []
         tstart = time.time()
         while len(ret) < 6 and time.time() - tstart < self.read_all_timeout:
-            ret += list(self.read_all_msgs())
+            ret += list(self.read_all_msgs(exp_data_bytes=length))
+        if len(ret) < 6:  # re-query the missing values
+            self.warn('warning: read_all timed out, trying to re-query for missing values')
+            new_ret = [None for _ in range(6)]
+            for status in ret:
+                new_ret[status.id] = status
+            for id in range(6):
+                if new_ret[id] is None:
+                    self.warn(f'\tre-querying {id=}')
+                    self.read_data(id, addr, length)
+            tstart = time.time()
+            while (any(status is None for status in new_ret) and
+                   (time.time() - tstart < self.read_all_timeout)):
+                for status in self.read_all_msgs(exp_data_bytes=length):
+                    new_ret[status.id] = status
+            ret = [status for status in new_ret if status is not None]
+            assert len(ret) == 6, f'Error reading all: {ret = }'
+            self.warn('\tSuccess re-querying missing values!!!')
         return ret
 
     def enable_all(self):

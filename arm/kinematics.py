@@ -30,6 +30,20 @@ SCREW_AXES = np.array([
     [1, 0, 0, 0, 0, 0],
 ])
 
+# Joint Limits
+JOINT_LIMITS_COUNTS = [
+    [0, 1023],
+    [130, 870],
+    #    [865, 165],
+    [40, 1023],
+    [0, 1023],
+    [170, 880],
+]
+JOINT_LIMITS_DEG = [
+    [util.counts2deg(llim), util.counts2deg(ulim)] for llim, ulim in JOINT_LIMITS_COUNTS
+]
+JOINT_LIMITS = np.deg2rad(JOINT_LIMITS_DEG)
+
 # Forward Kinematics
 def fk(theta, rest_Ts=REST_TRANSFORMS, screw_axes=SCREW_AXES):
     """
@@ -108,17 +122,17 @@ def jacobian_deg(theta, **kwargs):
 
 
 def joint_vels(theta1, theta2, max_vel=None):
+    if False:
+        wT1, _ = fk(theta1)
+        wT2, _ = fk(theta2)
+        J = jacobian(theta1)
 
-    wT1, _ = fk(theta1)
-    wT2, _ = fk(theta2)
-    J = jacobian(theta1)
+        _1T2 = np.linalg.inv(wT1) @ wT2
+        dT = util.logm_to_vector(scipy.linalg.logm(_1T2))
+        # ignore spin direction
+        ret = np.linalg.lstsq(J, dT, rcond=None)[0]
 
-    _1T2 = np.linalg.inv(wT1) @ wT2
-    dT = util.logm_to_vector(scipy.linalg.logm(_1T2))
-    # ignore spin direction
-    ret = np.linalg.lstsq(J, dT, rcond=None)[0]
-
-    if True:
+    else:
         ret = np.array(theta2) - np.array(theta1)
 
     if max_vel is not None:
@@ -130,6 +144,23 @@ def joint_vels_deg(theta1, theta2, max_vel=None):
         max_vel = np.deg2rad(max_vel)
     return np.rad2deg(joint_vels(np.deg2rad(theta1), np.deg2rad(theta2), max_vel))
 
+def qdots_deg(qs_deg, max_qdot=50, min_qdot=None, start_q=None):
+    """
+    qs_deg: N x 5
+    """
+    qdots = np.zeros_like(qs_deg)
+    for i in range(len(qs_deg) - 1):
+        qdots[i + 1] = joint_vels_deg(qs_deg[i], qs_deg[i + 1], max_vel=max_qdot)
+    if start_q is not None:
+        qdots[0] = joint_vels_deg(start_q, qs_deg[0], max_vel=max_qdot)
+    else:
+        qdots[0] = [max_qdot, 0.8*max_qdot, max_qdot, max_qdot, 0.8*max_qdot]
+    # prevent robot from moving too slow by imposing min_qdot
+    if min_qdot is None:
+        min_qdot = max_qdot * 0.15
+    qdots = np.clip(np.abs(qdots), min_qdot, max_qdot)
+    return qdots
+
 def ik(T,
        theta0=[0.1, 0.1, 1.0, 0.1, 0.1], # not zeros because of singularity, and prefer elbow_down
        rest_Ts=REST_TRANSFORMS,
@@ -138,7 +169,8 @@ def ik(T,
        tol=1e-6,
        ignore_spin_axis=True,
        verbose=False,
-       elbow_mode=None):
+       elbow_mode=None,
+       check_joint_angles=True):
     """
     Compute the joint angles of a robot arm that achieve a desired end effector pose using inverse kinematics.
     Params:
@@ -158,6 +190,7 @@ def ik(T,
         elbow_mode: If None, the elbow can point in any direction.  If 'up' or 'down', elbow angle
             will be such that it's an elbow down-ish situation (how?).  If 'pos'/'neg', elbow angle
             will be forced to be positive/negative.
+        check_joint_angles: If True, check that the joint angles are within the robot's joint limits.
     Returns:
         A tuple (success, theta) where success is a boolean indicating whether the optimization succeeded,
         and theta is a list of joint angles that achieve the desired end effector pose.
@@ -195,6 +228,10 @@ def ik(T,
 
         # Check if the error is below the tolerance
         if np.linalg.norm(e) < tol:
+            if check_joint_angles:
+                # Check if the joint angles are within the joint limits
+                if not all(np.logical_and(theta >= JOINT_LIMITS[:, 0], theta <= JOINT_LIMITS[:, 1])):
+                    return False, theta
             return True, theta
 
         if not ignore_spin_axis:

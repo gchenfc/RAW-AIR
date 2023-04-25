@@ -123,3 +123,14 @@ def Ad(T):
     p = T[:3, 3]
     zeros = np.zeros((3, 3))
     return np.block([[R, zeros], [skew(p) @ R, R]])
+
+def counts2deg(counts: int):
+    """
+    Convert encoder counts to degrees.
+    """
+    return (counts / 1023 * 300 - 150)
+def deg2counts(angle: float):
+    """
+    Convert degrees to encoder counts.
+    """
+    return int((angle + 150) / 300 * 1023)
