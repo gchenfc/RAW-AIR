@@ -29,7 +29,8 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   // Use UART port of DYNAMIXEL Shield to debug.
   USB.begin(57600);
-  BT.begin(9600);
+  // BT.begin(9600);
+  BT.begin(1000000);
   
   // Set Port baudrate to 57600bps. This has to match with DYNAMIXEL baudrate.
   // dxl.begin(USB.baud());
