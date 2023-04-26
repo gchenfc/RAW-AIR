@@ -47,7 +47,8 @@ class PosePathWaypoint:
 
 
 class Arm(AX12s):
-    CANVAS_CENTER = np.array([-0.03205, 0.147, 0.2493])
+    CANVAS_CENTER = np.array([-0.03205, 0.147, 0.2493])  # Klaus
+    # CANVAS_CENTER = np.array([-0.03205, 0.207, 0.2493])  # Mobile Frame (DFL)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -278,7 +279,7 @@ class Arm(AX12s):
                                  **ik_params)
 
     # Predefined Trajectories
-    def do_move_home(self, vmax=50, **go_to_kwargs):
+    def do_move_home(self, vmax=100, **go_to_kwargs):
         self.go_to_blocking([0, 0, 0, 0, 0], default_speed=vmax, **go_to_kwargs)
 
     def do_dip(
@@ -289,7 +290,7 @@ class Arm(AX12s):
         rub1_qs_deg=[23.02, -26.53, 114.51, 3.37, 85.77],
         rub2_qs_deg=[22.14, -12.75, 104.83, 3.66, 75.51],
         verbosity=0,
-        vmax=50,
+        vmax=100,
     ):
         path = [
             JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
@@ -304,13 +305,13 @@ class Arm(AX12s):
         ]
         self.execute_joint_path(path, verbosity=verbosity, default_speed=vmax)
 
-    def do_prep_paint(self, center=CANVAS_CENTER, ease_dist=0.1, elbow_mode='neg', vmax=50):
+    def do_prep_paint(self, center=CANVAS_CENTER, ease_dist=0.1, elbow_mode='neg', vmax=100):
         return self.go_to_canvas_blocking([0, -ease_dist, 0],
                                           center=center,
                                           elbow_mode=elbow_mode,
                                           default_speed=vmax)
 
-    def do_start_paint(self, center=CANVAS_CENTER, angle=-np.pi / 2, elbow_mode='neg', vmax=50):
+    def do_start_paint(self, center=CANVAS_CENTER, angle=-np.pi / 2, elbow_mode='neg', vmax=100):
         return self.go_to_canvas_blocking([0, 0, 0],
                                           center=center,
                                           angle=angle,
