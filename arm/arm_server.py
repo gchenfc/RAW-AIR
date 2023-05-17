@@ -14,9 +14,11 @@
 
 import asyncio
 import json
+from json import JSONEncoder
 import websockets
 
 from arm import Arm, JointPathWaypoint
+from dynamixel import StatusParams, Status
 import kinematics
 import time
 import numpy as np
@@ -30,7 +32,18 @@ default_port = '/dev/tty.usbmodem103568505'
 default_baud = 1000000
 default_write_packet_delay = 0.01
 
+class MyEncoder(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, StatusParams):
+            return o.value()
+        elif isinstance(o, Status):
+            return o.__dict__
+        elif isinstance(o, np.ndarray):
+            return o.tolist()
+        return JSONEncoder.default(self, o)
+
 async def rpc_server(websocket, path):
+    print('rpc_server: connected!!!!')
     with Arm(default_port, default_baud, write_packet_delay=default_write_packet_delay) as arm:
         while True:
             data = await websocket.recv()
@@ -44,11 +57,11 @@ async def rpc_server(websocket, path):
             # Call the RPC method and get the result or error
             try:
                 result = await rpc_call(arm, method_name, *method_params.get("args", []), **method_params.get("kwargs", {}))
-                response = json.dumps({"result": result})
+                response = json.dumps({"result": result}, cls=MyEncoder)
             except Exception as e:
                 # If an exception is thrown, return an error object instead of a result object
                 error_message = str(e)
-                response = json.dumps({"error": error_message})
+                response = json.dumps({"error": error_message}, cls=MyEncoder)
             # Send the result or error back to the client
             await websocket.send(response)
 
@@ -73,12 +86,22 @@ async def rpc_call(arm: Arm, method_name, *method_params, **method_kwargs):
         result = arm.execute_joint_path(*method_params, **method_kwargs)
     elif method_name == 'arm.do_move_home':
         result = arm.do_move_home(*method_params, **method_kwargs)
+    elif method_name == 'arm.do_move_storage':
+        result = arm.do_move_storage(*method_params, **method_kwargs)
     elif method_name == 'arm.do_dip':
         result = arm.do_dip(*method_params, **method_kwargs)
     elif method_name == 'arm.do_prep_paint':
         result = arm.do_prep_paint(*method_params, **method_kwargs)
     elif method_name == 'arm.do_start_paint':
         result = arm.do_start_paint(*method_params, **method_kwargs)
+    elif method_name == 'arm.cur_pose':
+        result = arm.cur_pose(*method_params, **method_kwargs)
+    elif method_name == 'arm.cur_point':
+        result = arm.cur_point(*method_params, **method_kwargs)
+    elif method_name == 'arm.cur_canvas_pose':
+        result = arm.cur_canvas_pose(*method_params, **method_kwargs)
+    elif method_name == 'arm.cur_canvas_point':
+        result = arm.cur_canvas_point(*method_params, **method_kwargs)
 
     # AX12s functions
     elif method_name == 'arm.write_all':
@@ -98,7 +121,7 @@ async def rpc_call(arm: Arm, method_name, *method_params, **method_kwargs):
     elif method_name == 'arm.set_compliance_slopes':
         result = arm.set_compliance_slopes(*method_params, **method_kwargs)
     elif method_name == 'arm.read_all_joint_angles_deg':
-        result = arm.read_all_joint_angles_deg
+        result = arm.read_all_joint_angles_deg(*method_params, **method_kwargs)
     elif method_name == 'arm.joint_angles_deg':
         result = arm.joint_angles_deg(*method_params, **method_kwargs)
     elif method_name == 'arm.joint_angles_string':

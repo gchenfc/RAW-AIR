@@ -47,8 +47,8 @@ class PosePathWaypoint:
 
 
 class Arm(AX12s):
-    CANVAS_CENTER = np.array([-0.03205, 0.147, 0.2493])  # Klaus
-    # CANVAS_CENTER = np.array([-0.03205, 0.207, 0.2493])  # Mobile Frame (DFL)
+    # CANVAS_CENTER = np.array([-0.03205, 0.147, 0.2493])  # Klaus
+    CANVAS_CENTER = np.array([-0.03205, 0.207, 0.2493])  # Mobile Frame (DFL)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -59,6 +59,16 @@ class Arm(AX12s):
 
     def cur_point(self, q=None):
         return self.cur_pose(q=q)[:3, 3]
+
+    def cur_canvas_pose(self, q=None, center=CANVAS_CENTER):
+        # THIS FUNCTION IS UNTESTED
+        wTxyz = self.cur_pose(q=q)
+        centerTxyz = wTxyz @ SE3.RotX(np.pi / 2) @ SE3.P(-center)
+        # assert self.canvas2joint(centerTxyz, center=center, angle=-np.pi / 2) == q
+        return centerTxyz
+
+    def cur_canvas_point(self, q=None, center=CANVAS_CENTER):
+        return self.cur_canvas_pose(q=q, center=center)[:3, 3]
 
     def __str__(self):
         q = np.array(self.joint_angles_deg())
@@ -281,6 +291,10 @@ class Arm(AX12s):
     # Predefined Trajectories
     def do_move_home(self, vmax=100, **go_to_kwargs):
         self.go_to_blocking([0, 0, 0, 0, 0], default_speed=vmax, **go_to_kwargs)
+
+    def do_move_storage(self, vmax=100, **go_to_kwargs):
+        self.go_to_blocking([90, 100, -140, 0, -100], default_speed=vmax, **go_to_kwargs)
+        self.disable_all()
 
     def do_dip(
         self,

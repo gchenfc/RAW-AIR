@@ -22,7 +22,7 @@ See also gerry01_test_servos.ipynb for a Jupyter notebook with more examples.
 import serial
 import time
 from typing import Union, Optional
-from collections import namedtuple
+import dataclasses
 
 Byte = int  # type -> 0-255
 Data = Union[Byte, bytes, list[Byte]]
@@ -36,7 +36,11 @@ class StatusParams(bytes):
     def __str__(self) -> str:
         return str(self.value())
 
-class Status(namedtuple('Status', ['id', 'error', 'data'])):
+@dataclasses.dataclass
+class Status:
+    id: Byte
+    error: Byte
+    data: StatusParams
     def __repr__(self):
         return f'Status(id=0x{self.id:02x}, error={self.error:08b}, data={self.data})'
 
@@ -99,7 +103,7 @@ assert checksum(bytes([0x01, 0x05, 0x03, 0x0C, 0x64, 0xAA])) == 0xDC, 'checksum 
 exp_id_instr_data = 1, 3, bytes([0x0C, 0x64, 0xAA])
 exp_packet = bytes([0xFF, 0xFF, 0x01, 0x05, 0x03, 0x0C, 0x64, 0xAA, 0xDC])
 assert create_packet(*exp_id_instr_data) == exp_packet, 'create_packet failed unit test'
-assert decode_packet(exp_packet) == exp_id_instr_data, 'decode_packet failed unit test'
+assert decode_packet(exp_packet) == Status(*exp_id_instr_data), 'decode_packet failed unit test'
 
 
 class Dynamixel(serial.Serial):
