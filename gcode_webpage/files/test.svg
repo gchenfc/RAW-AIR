@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 622.42 643.3">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.42px;
+      }
+    </style>
+  </defs>
+  <g id="CIRCLE">
+    <circle class="cls-1" cx="144.12" cy="222.1" r="143.41" />
+  </g>
+  <!-- <g id="POLYLINE">
+    <rect class="cls-1" x="160.83" y="197.03" width="247.84" height="328.6" />
+  </g>
+  <g id="POLYLINE-2">
+    <polygon class="cls-1" points="305.64 418.42 454.62 .71 621.71 275.01 387.79 642.59 305.64 418.42" />
+  </g> -->
+  <path d="M0,0 C100,100,300,300,200,0 Z" />
+  <path d="M200,0 c100,100,300,300,200,0 Z" />
+</svg>
