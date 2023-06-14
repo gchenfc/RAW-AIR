@@ -11,10 +11,12 @@ body {
 	padding: 1em;
 	box-sizing: border-box;
 }
+
 h1 {
 	margin-top: 0;
 	color: #ccc;
 }
+
 canvas {
 	position: absolute;
 	width: 100%;
@@ -23,6 +25,7 @@ canvas {
 	top: 0;
 	border: red solid 1px;
 }
+
 #info {
 	z-index: 1;
 	position: absolute;
@@ -32,35 +35,46 @@ canvas {
 }
 
 .color {
-  height: 50px;
-  width: 50px;
-  border-radius: 50%;
+	height: 50px;
+	width: 50px;
+	border-radius: 50%;
 }
 
 .black {
-	background-color:black;
+	background-color: black;
 }
 
 .red {
-	background-color:red;
+	background-color: red;
 }
 
 .yellow {
-	background-color:yellow;
+	background-color: yellow;
 }
 
 .green {
-	background-color:green;
+	background-color: green;
 }
 
 .blue {
-	background-color:blue;
+	background-color: blue;
 }
 
 .purple {
-	background-color:purple;
+	background-color: purple;
 }
 
 textarea {
 	/* overflow-x: hidden; */
+}
+
+#websocket-status {
+	background-color: red;
+	float: right;
+	width: 100px;
+	/* height: 100px; */
+	margin-right: 100px;
+	padding: 30px 10px;
+	text-align: center;
+	box-shadow: 5px 5px;
 }

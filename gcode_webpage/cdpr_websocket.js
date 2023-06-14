@@ -32,3 +32,22 @@ websocket.onmessage = function (event) {
   // console.log(command, x, y);
   console.log(command, x_raw, y_raw);
 };
+
+websocket.onopen = function (event) {
+  const elem = document.getElementById('websocket-status');
+  elem.style.backgroundColor = 'green';
+  elem.textContent = "Websocket connected :)";
+  console.log('yay connected');
+}
+
+websocket.onclose = function (event) {
+  const elem = document.getElementById('websocket-status');
+  elem.style.backgroundColor = 'red';
+  elem.textContent = "WEBSOCKET NOT CONNECTED";
+}
+
+websocket.onerror = function (event) {
+  const elem = document.getElementById('websocket-status');
+  elem.style.backgroundColor = 'red';
+  elem.textContent = "WEBSOCKET ERRORED OUT";
+}
