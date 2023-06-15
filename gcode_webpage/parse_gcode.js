@@ -1,5 +1,4 @@
 let units_to_m = 0.001;
-let cur_pos = null;
 
 CALLBACKS_READABLE = {
   G0: (args) => 'moveTo ' + JSON.stringify(args),
@@ -12,7 +11,7 @@ CALLBACKS_READABLE = {
   default: (cmd, args, raw) => `UNKNOWN command: ${cmd} with args ${args}.  ${raw}`
 }
 CALLBACKS_CDPR_COMMAND = {
-  G0: (args) => (cur_pos ? (`U0,${cur_pos.X},${cur_pos.Y};`) : '') + `M0,${args.X},${args.Y}`,
+  G0: (args) => `M0,${args.X},${args.Y}`,
   G1: (args) => `L0,${args.X},${args.Y}`,
   G20: (args) => { units_to_m = 0.0254; return '' }, // inch units
   G21: (args) => { units_to_m = 0.001; return '' },
@@ -25,7 +24,7 @@ CALLBACKS_OBJECT = {
   default: (cmd, args, raw) => { return { cmd: cmd, args: args, raw: raw } }
 }
 
-function parseGCodeLine(line, callbacks = CALLBACKS, display_callback = console.log) {
+function parseGCodeLine(line, callbacks = CALLBACKS_CDPR_COMMAND, display_callback = console.log) {
   // Split the line at the semicolon and only keep the first part
   line = line.split(';')[0];
 
@@ -39,15 +38,32 @@ function parseGCodeLine(line, callbacks = CALLBACKS, display_callback = console.
   }, {});
 
   ret = callbacks[command] ? callbacks[command](args) : callbacks.default(command, args, line);
-  if (command == 'G0' || command == 'G1') {
-    cur_pos = { X: args.X, Y: args.Y };
-  }
   display_callback(ret);
   return ret;
 }
 
-function parseGCode(gcode, callbacks = CALLBACKS, display_callback = console.log) {
-  cur_pos = null;
+function parseGCode(gcode, callbacks = CALLBACKS_CDPR_COMMAND, display_callback = console.log) {
   const lines = gcode.split('\n');
   return lines.map((line) => parseGCodeLine(line, callbacks, display_callback));
+}
+
+function correct_ends_of_strokes_to_U_inplace(cdpr_command_lines) {
+  let last_L_line = null;
+  for (let i = 0; i < cdpr_command_lines.length; i++) {
+    switch (cdpr_command_lines[i][0]) {
+      case 'L':
+        last_L_line = i;
+        break;
+      case 'M':
+        if (last_L_line) {
+          cdpr_command_lines[last_L_line] = cdpr_command_lines[last_L_line].replace('L', 'U');
+          last_L_line = null;
+        }
+        break;
+    }
+  }
+  if (last_L_line) {
+    cdpr_command_lines[last_L_line] = cdpr_command_lines[last_L_line].replace('L', 'U');
+  }
+  return cdpr_command_lines;
 }

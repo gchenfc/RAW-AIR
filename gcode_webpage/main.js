@@ -9,9 +9,10 @@ function parseGCodeString(gcode) {
 
   gcodeLines = gcode.split('\n');
 
-  parsedLines = parseGCode(gcode, callbacks = CALLBACKS_CDPR_COMMAND);
   parsedLinesReadable = parseGCode(gcode, callbacks = CALLBACKS_READABLE);
   parsedLinesObjects = parseGCode(gcode, callbacks = CALLBACKS_OBJECT);
+  parsedLines = parseGCode(gcode, callbacks = CALLBACKS_CDPR_COMMAND);
+  correct_ends_of_strokes_to_U_inplace(parsedLines);
 
   reset();
   highlight(lineIndex);
