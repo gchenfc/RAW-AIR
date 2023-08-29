@@ -228,6 +228,11 @@ class AX12s(AX12):
         self.set_speed(25)
         self.speeds = [25 for _ in range(6)]  # This gets set in set_speed, but in case you comment out set_speed
 
+    def turn_off_all_servos(self):
+        self.write_packet(0x55, 0x03, 0)
+    def turn_on_all_servos(self):
+        self.write_packet(0x55, 0x03, 1)
+
     def write_all(self, addr: Byte, value: Data, nbytes:Optional[int]=None):
         if nbytes is not None and isinstance(value, int):
             value = int2bytes(value, nbytes)
