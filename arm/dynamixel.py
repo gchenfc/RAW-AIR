@@ -225,7 +225,8 @@ class AX12s(AX12):
     def __init__(self, *args, read_all_timeout=1.0, **kwargs):
         super().__init__(*args, **kwargs)
         self.read_all_timeout = read_all_timeout
-        self.write_all(AX12.MOVING_SPEED, int2bytes(25, 2))
+        self.set_speed(25)
+        self.speeds = [25 for _ in range(6)]  # This gets set in set_speed, but in case you comment out set_speed
 
     def write_all(self, addr: Byte, value: Data, nbytes:Optional[int]=None):
         if nbytes is not None and isinstance(value, int):
@@ -262,9 +263,11 @@ class AX12s(AX12):
     def disable_all(self):
         return self.write_all(AX12.TORQUE_ENABLE, 0)
     def set_speed(self, speed_counts):
+        self.speeds = [speed_counts for _ in range(6)]
         return self.write_all(AX12.MOVING_SPEED, int2bytes(speed_counts, 2))
     def set_speeds(self, speeds_counts):
         assert len(speeds_counts) == 6, 'Must have 6 speeds'
+        self.speeds = [v for v in speeds_counts]
         return self.sync_write(AX12.MOVING_SPEED,
                                [(i, int2bytes(abs(s), 2)) for i, s in enumerate(speeds_counts)])
 
@@ -295,10 +298,11 @@ class AX12s(AX12):
         return ' '.join([f'{angle:3.0f}' for angle in joint_angles])
 
     def command_angle(self, id: Byte, angle: float):
-        return self.write_data(id, AX12.GOAL_POSITION, int2bytes(deg2counts(id, angle), 2))
+        # When writing goal position, also write speed since sometimes it gets reset to 0 due to brownout and moves really fast
+        return self.write_data(id, AX12.GOAL_POSITION, int2bytes(deg2counts(id, angle), 2) + int2bytes(self.speeds[id], 2))
     def _command_angles_counts(self, *angles):
         return self.sync_write(AX12.GOAL_POSITION,
-                               [(i, int2bytes(angle, 2)) for i, angle in enumerate(angles)])
+                               [(i, int2bytes(angle, 2) + int2bytes(self.speeds[i], 2)) for i, angle in enumerate(angles)])
     def command_angles_deg(self, *angles):
         assert len(angles) == 5, 'Must have 5 joint angles'
         assert min(angles) >= -150, 'Angles should range from -150 to 150'
