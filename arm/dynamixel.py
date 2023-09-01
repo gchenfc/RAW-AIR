@@ -222,11 +222,11 @@ def counts2deg(id, counts: int):
 
 
 class AX12s(AX12):
-    def __init__(self, *args, read_all_timeout=1.0, **kwargs):
+    def __init__(self, *args, read_all_timeout=1.0, speed=25, **kwargs):
         super().__init__(*args, **kwargs)
         self.read_all_timeout = read_all_timeout
-        self.set_speed(25)
-        self.speeds = [25 for _ in range(6)]  # This gets set in set_speed, but in case you comment out set_speed
+        self.speeds = [speed, speed, speed, speed*2, speed, speed]  # This gets set in set_speed, but in case you comment out set_speed
+        self.set_speeds(self.speeds)
 
     def turn_off_all_servos(self):
         self.write_packet(0x55, 0x03, 0)
@@ -268,13 +268,17 @@ class AX12s(AX12):
     def disable_all(self):
         return self.write_all(AX12.TORQUE_ENABLE, 0)
     def set_speed(self, speed_counts):
-        self.speeds = [speed_counts for _ in range(6)]
-        return self.write_all(AX12.MOVING_SPEED, int2bytes(speed_counts, 2))
+        self.speeds = [abs(speed_counts) for _ in range(6)]
+        # We don't actually need to write the speed because it is written every time we call command_angle
+        # return self.write_all(AX12.MOVING_SPEED, int2bytes(speed_counts, 2))
+        return 1
     def set_speeds(self, speeds_counts):
         assert len(speeds_counts) == 6, 'Must have 6 speeds'
-        self.speeds = [v for v in speeds_counts]
-        return self.sync_write(AX12.MOVING_SPEED,
-                               [(i, int2bytes(abs(s), 2)) for i, s in enumerate(speeds_counts)])
+        self.speeds = [abs(v) for v in speeds_counts]
+        # We don't actually need to write the speed because it is written every time we call command_angle
+        # return self.sync_write(AX12.MOVING_SPEED,
+        #                        [(i, int2bytes(abs(s), 2)) for i, s in enumerate(speeds_counts)])
+        return 1
 
     def set_compliance_margins(self, margin: int):
         assert margin < 256, 'Margin must be less than 256'
