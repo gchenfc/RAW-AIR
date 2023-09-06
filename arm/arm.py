@@ -19,7 +19,7 @@ with Arm(port=port, baudrate=baudrate) as arm:  # args like serial.Serial
 See also gerry01_test_servos.ipynb for a Jupyter notebook with more examples.
 """
 
-from dynamixel import AX12s, Byte, Data
+from dynamixel import AX12s, Byte, Data, JOINT_FLIPS
 import time
 from typing import Optional
 import dataclasses
@@ -78,6 +78,7 @@ class Arm(AX12s):
     # Check if the robot is at the goal position
     def reached_goal(self, goal, tol=5, angles_out=None):
         if len(goal) == 5:
+            goal = [f * a for f, a in zip(JOINT_FLIPS, goal)]
             goal = [goal[0], goal[1], -goal[1], *goal[2:]]
         elif len(goal) != 6:
             raise ValueError('goal must be length 5 or 6')

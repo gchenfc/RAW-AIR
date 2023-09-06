@@ -27,6 +27,8 @@ import dataclasses
 Byte = int  # type -> 0-255
 Data = Union[Byte, bytes, list[Byte]]
 
+JOINT_FLIPS = [1, 1, 1, 1, 1]
+
 
 class StatusParams(bytes):
     def value(self) -> int:
@@ -301,7 +303,8 @@ class AX12s(AX12):
     def joint_angles_deg(self):
         ret = self.read_all_joint_angles_deg()
         assert len(ret) == 6, f'Error reading joint angles: {ret = }'
-        return [ret[0], (ret[1] - ret[2]) / 2, ret[3], ret[4], ret[5]]
+        angles = [ret[0], (ret[1] - ret[2]) / 2, ret[3], ret[4], ret[5]]
+        return [f * a for f, a in zip(JOINT_FLIPS, angles)]
     def joint_angles_string(self):
         joint_angles = self.joint_angles_deg()
         return ' '.join([f'{angle:3.0f}' for angle in joint_angles])
@@ -316,6 +319,7 @@ class AX12s(AX12):
         assert len(angles) == 5, 'Must have 5 joint angles'
         assert min(angles) >= -150, 'Angles should range from -150 to 150'
         assert max(angles) <= 150, 'Angles should range from -150 to 150'
+        angles = [f * a for f, a in zip(JOINT_FLIPS, angles)]
         angles = [angles[0], angles[1], -angles[1], *angles[2:]]
         angles = [deg2counts(id, angle) for id, angle in enumerate(angles)]
         return self._command_angles_counts(*angles)
