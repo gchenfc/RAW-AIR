@@ -270,13 +270,13 @@ class AX12s(AX12):
     def disable_all(self):
         return self.write_all(AX12.TORQUE_ENABLE, 0)
     def set_speed(self, speed_counts):
-        self.speeds = [abs(speed_counts) for _ in range(6)]
+        self.speeds = [int(abs(speed_counts)) for _ in range(6)]
         # We don't actually need to write the speed because it is written every time we call command_angle
         # return self.write_all(AX12.MOVING_SPEED, int2bytes(speed_counts, 2))
         return 1
     def set_speeds(self, speeds_counts):
         assert len(speeds_counts) == 6, 'Must have 6 speeds'
-        self.speeds = [abs(v) for v in speeds_counts]
+        self.speeds = [int(abs(v)) for v in speeds_counts]
         # We don't actually need to write the speed because it is written every time we call command_angle
         # return self.sync_write(AX12.MOVING_SPEED,
         #                        [(i, int2bytes(abs(s), 2)) for i, s in enumerate(speeds_counts)])

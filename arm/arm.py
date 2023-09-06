@@ -47,8 +47,9 @@ class PosePathWaypoint:
 
 
 class Arm(AX12s):
-    # CANVAS_CENTER = np.array([-0.03205, 0.147, 0.2493])  # Klaus
-    CANVAS_CENTER = np.array([-0.03205, 0.207, 0.2493])  # Mobile Frame (DFL)
+    # CANVAS_CENTER = np.array([-0.03205, 0.19, 0.2493])  # Klaus
+    # CANVAS_CENTER = np.array([-0.03205, 0.207, 0.2493])  # Mobile Frame (DFL)
+    CANVAS_CENTER = np.array([-0.03205, 0.33, 0.2493])  # Library
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -300,10 +301,14 @@ class Arm(AX12s):
     def do_dip(
         self,
         prep_qs_deg=[20.08, -23.90, 83.72, 3.66, 100.73],
-        hover_qs_deg=[22.72, -28.00, 106.30, 3.37, 86.95],
-        dip_qs_deg=[22.14, -23.90, 115.10, 3.37, 79.61],
-        rub1_qs_deg=[23.02, -26.53, 114.51, 3.37, 85.77],
-        rub2_qs_deg=[22.14, -12.75, 104.83, 3.66, 75.51],
+        # hover_qs_deg=[22.72, -28.00, 106.30, 3.37, 86.95],
+        # dip_qs_deg=[22.14, -23.90, 115.10, 3.37, 79.61],
+        # rub1_qs_deg=[23.02, -26.53, 114.51, 3.37, 85.77],
+        # rub2_qs_deg=[22.14, -12.75, 104.83, 3.66, 75.51],
+        hover_qs_deg=[22.72, -28.00 + 0, 106.30 - 0, 3.37, 86.95 - 4],
+        dip_qs_deg=[22.14, -23.90 + 0, 115.10 - 0, 3.37, 79.61 - 4],
+        rub1_qs_deg=[23.02, -26.53 + 0, 114.51 - 0, 3.37, 85.77 - 4],
+        rub2_qs_deg=[22.14, -12.75 + 0, 104.83 - 0, 3.66, 75.51 - 4],
         verbosity=0,
         vmax=100,
     ):
@@ -320,7 +325,7 @@ class Arm(AX12s):
         ]
         self.execute_joint_path(path, verbosity=verbosity, default_speed=vmax)
 
-    def do_prep_paint(self, center=CANVAS_CENTER, ease_dist=0.1, elbow_mode='neg', vmax=100):
+    def do_prep_paint(self, center=CANVAS_CENTER, ease_dist=0.20, elbow_mode='neg', vmax=100):
         return self.go_to_canvas_blocking([0, -ease_dist, 0],
                                           center=center,
                                           elbow_mode=elbow_mode,
