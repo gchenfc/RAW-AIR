@@ -1,2 +1,25 @@
 # RAW-AIR
 Code for Tristan's and my [GT Library's Artist-in-residence](https://library.gatech.edu/AIR) robot, and ME senior capstone
+
+
+
+## Cable Robot
+* Turn down speed to ts0.04
+* Turn down speed in cdpr.js to 0.04
+* Check anticogging calibration - Motors 0/1 seemed to be ok but Motors 2/3 did not appear to be ok.
+* Set L/R/U/D limits in cable robot manually via serial
+  * ```xLu1.8;xLr5;xLl0.8;xLd0.3```
+* Set custom gains
+
+```
+gs0;ts0.04;gs1;ts0.04;gs2;ts0.04;gs0
+gs0;xLu1.8;xLr5;xLl0.8;xLd0.3;gs1;xLu1.8;xLr5;xLl0.8;xLd0.3;gs2;xLu1.8;xLr5;xLl0.8;xLd0.3;gs0
+gs0;kKp10000;kKd500;kKi50;gs1;kKp10000;kKd500;kKi50;gs2;kKp10000;kKd500;kKi50;gs0
+gs1;xA0.03;gs0
+```
+
+```
+ts0.04
+xLu1.8;xLr5;xLl0.8;xLd0.3
+kKp10000;kKd500;kKi50
+```
