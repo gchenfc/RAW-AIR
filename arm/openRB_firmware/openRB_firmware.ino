@@ -33,6 +33,7 @@ enum Interface {
 
 uint8_t packet_buffer[DXL_PACKET_BUFFER_LENGTH];
 unsigned long led_update_time = 0;
+constexpr long FLASH_DURATION = 50;  // ms
 
 // Code for acting as a slave device, to turn servos on/off.
 constexpr uint8_t MY_SLAVE_ID = 0x55;
@@ -150,13 +151,18 @@ void dataTransceiver() {
     BT.write(packet_buffer, length);
     ledStatus();
   }
+
+  // Logic is: For the first FLASH_DURATION/2 ms after ledStatus is first
+  // called, turn the LED on.  Then, turn it off for the next FLASH_DURATION/2
+  // ms.  If ledStatus keeps getting called after FLASH_DURATION, then reset
+  // the led_update_time to now so that the LED will be on again for
+  // FLASH_DURATION/2.
+  digitalWrite(LED_BUILTIN,
+               (millis() - led_update_time) < (FLASH_DURATION / 2));
 }
 
 void ledStatus() {
-  if ((millis() - led_update_time) > 200) {
-    digitalWrite(LED_BUILTIN, 1);
+  if ((millis() - led_update_time) > FLASH_DURATION) {
     led_update_time = millis();
-  } else {
-    digitalWrite(LED_BUILTIN, 0);
   }
 }
