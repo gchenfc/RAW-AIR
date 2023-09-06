@@ -9,8 +9,20 @@
     </head>
     <body>
 
-        <input type="file" id="gcodeFile" />
-        <button onclick="parseFile()">Parse File</button>
+        <div>
+            <input type="file" id="gcodeFile" />
+            <button onclick="parseFile()" style="margin-right: 50px;">Parse File</button>
+
+            <!-- Text fields for X, Y, and scale -->
+            <input type="text" id="translateX" placeholder="Translate X" />
+            <button onclick="updateTranslateX()">Set X Offset</button>
+            
+            <input type="text" id="translateY" placeholder="Translate Y" />
+            <button onclick="updateTranslateY()">Set Y Offset</button>
+            
+            <input type="text" id="scaleValue" placeholder="Scale" />
+            <button onclick="updateScale()">Set Scale</button>
+        </div>
         
         <div style="display: flex; gap: 10px;">
             <h3 style="width: 33%; text-align: center; text-decoration: underline; margin-bottom: 3px;">gcode</h3>
@@ -31,11 +43,25 @@
         <button onclick="sendCurLine()">Send current but don't advance</button>
         <button onclick="advance()">Advance without sending current</button>
         <button onclick="back()">Back without sending</button>
-        
-        <h3 style="width: 50%; text-align: center; text-decoration: underline; margin-bottom: 3px;">Sent to the cable robot control panel</h3>
-        <textarea id="sentCommands" style="width: 50%; min-height:30vh" readonly wrap="off"></textarea>
 
-        <h3 id="websocket-status">WEBSOCKET NOT CONNECTED</h3>
+        <div class="container">
+            <div class="sentCommandsDiv">
+                <h3>Sent to the cable robot control panel</h3>
+                <textarea id="sentCommands" readonly wrap="off"></textarea>
+            </div>
+        
+            <div id="previewCanvasDiv">
+                Preview:
+                <div>
+                    <canvas id="previewCanvas"></canvas>
+                    <canvas id="cursorCanvas"></canvas>
+                </div>
+            </div>
+        
+            <div class="websocketDiv">
+                <h3 id="websocket-status">WEBSOCKET NOT CONNECTED</h3>
+            </div>
+        </div>
 
         <!-- Reference Source: https://github.com/shuding/apple-pencil-safari-api-test -->
         <!-- <h1>Demo of Apple Pencil / 3D touch API</h1> -->
@@ -59,6 +85,7 @@
         <script type="module" src="./gcode-interpreter/src/index.js"></script> -->
         <script src="cdpr_websocket.js"></script>
         <script src="parse_gcode.js"></script>
+        <script src="simulator.js"></script>
         <script src="main.js"></script>
     </body>
 </html>

@@ -17,14 +17,14 @@ h1 {
 	color: #ccc;
 }
 
-canvas {
+/* canvas {
 	position: absolute;
 	width: 100%;
 	height: 100%;
 	left: 0;
 	top: 0;
 	border: red solid 1px;
-}
+} */
 
 #info {
 	z-index: 1;
@@ -64,17 +64,70 @@ canvas {
 	background-color: purple;
 }
 
-textarea {
-	/* overflow-x: hidden; */
+.container {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.sentCommandsDiv {
+	width: 50%;
+}
+
+.sentCommandsDiv h3 {
+	text-align: center;
+	text-decoration: underline;
+	margin-bottom: 3px;
+}
+
+#sentCommands {
+	width: 100%;
+	min-height: 30vh;
+}
+
+#previewCanvasDiv {
+	width: 30%;
+	aspect-ratio: 1;
+	height: 30vw;
+	position: relative; /* Added this to make the absolute positioning of the canvas relative to this div */
+}
+
+#previewCanvas, #cursorCanvas {
+	border: 1px solid #000000;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.websocketDiv {
+	width: 20%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 #websocket-status {
 	background-color: red;
-	float: right;
-	width: 100px;
-	/* height: 100px; */
-	margin-right: 100px;
-	padding: 30px 10px;
+	width: 100%;
 	text-align: center;
 	box-shadow: 5px 5px;
+	padding: 30px 10px;
+}
+
+/* Add some margins to the bottom row */
+.sentCommandsDiv,
+#previewCanvasDiv,
+.websocketDiv {
+    margin: 0 10px; /* Adjust the value as needed */
+}
+
+/* To ensure there's no margin on the outermost elements */
+.container > :first-child {
+    margin-left: 0;
+}
+
+.container > :last-child {
+    margin-right: 0;
 }

@@ -13,6 +13,7 @@ function parseGCodeString(gcode) {
   parsedLinesObjects = parseGCode(gcode, callbacks = CALLBACKS_OBJECT);
   parsedLines = parseGCode(gcode, callbacks = CALLBACKS_CDPR_COMMAND);
   correct_ends_of_strokes_to_U_inplace(parsedLines);
+  drawCommands(parsedLines);
 
   reset();
   highlight(lineIndex);
@@ -55,6 +56,9 @@ function highlight(lineNumber) {
   commandsDisplay.value = parsedLines.map((line, index) =>
     index === lineNumber ? `> ${line}` : `  ${line}`
   ).join('\n');
+
+  // Display in simulation
+  drawSimCursor(parsedLines[lineNumber - 1], parsedLines[lineNumber]);
 
   // Auto-scroll the textareas if the highlight is off the screen
   // Calculate the new scroll position
@@ -126,6 +130,7 @@ function runTillEndOfStroke() {
 // Initialize with some sample gcode
 parseGCodeString(`G21
 G90;svg#Default > path
+;
 G0 X0 Y158.4458843191785
 G1 X8.556241426611795 Y149.89392958666818 F300
 G1 X12.969335736612468 Y145.49094351124086 F300
