@@ -16,7 +16,9 @@ function updateValue(id, target, message, checkPositive = false) {
 function updateTranslateX() { gcode_translate.X = updateValue('translateX', gcode_translate.X, 'X translation'); }
 function updateTranslateY() { gcode_translate.Y = updateValue('translateY', gcode_translate.Y, 'Y translation'); }
 function updateScale() { gcode_scale = updateValue('scaleValue', gcode_scale, 'Scale', true); }
-
+document.getElementById('translateX').value = gcode_translate.X;
+document.getElementById('translateY').value = gcode_translate.Y;
+document.getElementById('scaleValue').value = gcode_scale;
 
 CALLBACKS_READABLE = {
   undefined: (args) => '',

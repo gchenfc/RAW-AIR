@@ -4,7 +4,7 @@ const W = 5.8,
   H = 3.7;
 const SCALE = 500;
 const BRUSH_DIAMETER = 0.025; // mm
-const CURSOR_SIZE = 20; // Units
+const CURSOR_SIZE = 40; // Units
 
 // BOUNDS = {Y: [1, 1.7], X: [2.3, 3.6]}
 BOUNDS = {Y: [0.65, 2.4], X: [1.926, 3.86]}
