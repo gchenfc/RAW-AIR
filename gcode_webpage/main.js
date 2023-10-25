@@ -14,6 +14,9 @@ function parseGCodeString(gcode) {
   parsedLines = parseGCode(gcode, callbacks = CALLBACKS_CDPR_COMMAND);
   correct_ends_of_strokes_to_U_inplace(parsedLines);
   drawCommands(parsedLines);
+  
+  document.getElementById('readableDisplay').value = parsedLinesReadable.join('\n');
+  document.getElementById('commandsDisplay').value = parsedLines.join('\n');
 
   reset();
   highlight(lineIndex);
@@ -41,6 +44,24 @@ function appendToCallbackDisplay(text) {
 }
 
 function highlight(lineNumber) {
+  // Auto-scroll the textareas if the highlight is off the screen
+  // Calculate the new scroll position
+  const lineHeight = gcodeDisplay.scrollHeight / gcodeLines.length;
+  const linePos = lineHeight * lineNumber;
+  const visibleHeight = gcodeDisplay.clientHeight - 30;
+  if (linePos < gcodeDisplay.scrollTop || linePos > (gcodeDisplay.scrollTop + visibleHeight)) {
+    gcodeDisplay.scrollTop = linePos - visibleHeight;
+  }
+
+  // Do Highlighting
+  // highlight_caret(lineNumber);
+  highlight_overlay(lineNumber);
+
+  // Display in simulation
+  drawSimCursor(parsedLines[lineNumber - 1], parsedLines[lineNumber]);
+}
+
+function highlight_caret(lineNumber) {
   const gcodeDisplay = document.getElementById('gcodeDisplay');
   const highlightedContent = gcodeLines.map((line, index) =>
     index === lineNumber ? `> ${line}` : `  ${line}`
@@ -56,26 +77,25 @@ function highlight(lineNumber) {
   commandsDisplay.value = parsedLines.map((line, index) =>
     index === lineNumber ? `> ${line}` : `  ${line}`
   ).join('\n');
+}
+function highlight_overlay(lineNumber) {
+  const overlay = document.getElementById('highlightOverlay');
+  const scrollOffset = document.getElementById('gcodeDisplay').scrollTop;
+  const padding = 3;  // textarea padding + border + margin
 
-  // Display in simulation
-  drawSimCursor(parsedLines[lineNumber - 1], parsedLines[lineNumber]);
-
-  // Auto-scroll the textareas if the highlight is off the screen
-  // Calculate the new scroll position
-  const lineHeight = gcodeDisplay.scrollHeight / gcodeLines.length;
-  const linePos = lineHeight * lineNumber;
-  const visibleHeight = gcodeDisplay.clientHeight - 30;
-
-  if (linePos < gcodeDisplay.scrollTop || linePos > (gcodeDisplay.scrollTop + visibleHeight)) {
-    gcodeDisplay.scrollTop = linePos - visibleHeight;
+  overlay.style.top = `calc(${lineNumber}em - ${scrollOffset}px + ${padding}px)`;
+  if (parseFloat(getComputedStyle(overlay).top) > gcodeDisplay.clientHeight + 50) {
+    overlay.style.display = "none";
+  } else {
+    overlay.style.display = "block";
   }
-
 }
 
 function syncScroll(id) {
   const target = document.getElementById(id);
   const source = event.target;
   target.scrollTop = source.scrollTop;
+  highlight_overlay(lineIndex);
 }
 
 function sendCurLineAndAdvance() {
@@ -85,7 +105,7 @@ function sendCurLine() {
   if (lineIndex < parsedLines.length) {
     return send_line(parsedLines[lineIndex]);
   } else {
-    setTimeout(() => { alert('End of file!') }, 0);
+    setTimeout(() => { alert('End of file!') }, 100);
     return false;
   }
 }
@@ -95,7 +115,7 @@ function advance() {
     highlight(lineIndex);
     return true;
   } else {
-    setTimeout(() => { alert('End of file!') }, 0);
+    setTimeout(() => { alert('End of file!') }, 100);
     return false;
   }
 }
@@ -113,18 +133,20 @@ function reset() {
   lineIndex = 0;
   highlight(lineIndex);
 }
-function runTillEnd() {
-  if (sendCurLine() && advance()) {
-    setTimeout(runTillEnd, 0);
+function runInLoopRedraw(func, redrawInterval_ms = 10, startTime = Date.now()) {
+  while (func()) {
+    if (Date.now() - startTime > redrawInterval_ms) {
+      setTimeout(runInLoopRedraw, 0, func, redrawInterval_ms);
+      break;
+    }
   }
+  setTimeout(highlight, 0, lineIndex);
+}
+function runTillEnd() {
+  runInLoopRedraw(sendCurLineAndAdvance);
 }
 function runTillEndOfStroke() {
-  if (sendCurLine() && advance()) {
-    if (parsedLinesObjects[lineIndex].cmd !== 'G1') {
-      return false;
-    }
-    setTimeout(runTillEndOfStroke, 0);
-  }
+  runInLoopRedraw(() => sendCurLineAndAdvance() && (parsedLinesObjects[lineIndex].cmd === 'G1'));
 }
 
 // Initialize with some sample gcode

@@ -34,6 +34,20 @@ h1 {
 	width: 100%;
 }
 
+#highlightOverlay {
+  height: 1em;
+  width: 100%;
+	position: absolute;
+	background-color: rgba(0, 255, 55, 0.95);
+	z-index: -1;
+}
+
+textarea {
+	font-size: 1em;
+	line-height: 1em;
+	background-color: transparent;
+}
+
 .color {
 	height: 50px;
 	width: 50px;
@@ -86,8 +100,8 @@ h1 {
 }
 
 #previewCanvasDiv {
-	width: 30%;
-	aspect-ratio: 1;
+	/* width: 30%; */
+	aspect-ratio: 5.8/3.7;
 	height: 30vw;
 	position: relative; /* Added this to make the absolute positioning of the canvas relative to this div */
 }

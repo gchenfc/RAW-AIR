@@ -1,7 +1,8 @@
 let units_to_m = 0.001;
 
 // let gcode_translate = { X: 2, Y: 0 }, gcode_scale = 2;
-let gcode_translate = { X: 2.45, Y: 0.9 }, gcode_scale = 1.0;
+// let gcode_translate = { X: 2.45, Y: 0.9 }, gcode_scale = 1.0;
+let gcode_translate = { X: BOUNDS.X[0], Y: BOUNDS.Y[0] }, gcode_scale = 1.0;
 
 function updateValue(id, target, message, checkPositive = false) {
   let value = parseFloat(document.getElementById(id).value);

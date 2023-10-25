@@ -29,7 +29,8 @@
             <h3 style="width: 33%; text-align: center; text-decoration: underline; margin-bottom: 3px;">human-readable</h3>
             <h3 style="width: 33%; text-align: center; text-decoration: underline; margin-bottom: 3px;">cable robot control panel commands</h3>
         </div>
-        <div style="display: flex; gap: 10px; min-height:50vh;">
+        <div style="display: flex; gap: 10px; min-height:50vh; position: relative;">
+            <div id="highlightOverlay" style="pointer-events: none;"></div>
             <textarea id="gcodeDisplay" style="width: 33%;" readonly wrap="off" onscroll="syncScroll('readableDisplay')"></textarea>
             <textarea id="readableDisplay" style="width: 33%;" readonly wrap="off" onscroll="syncScroll('commandsDisplay')"></textarea>
             <textarea id="commandsDisplay" style="width: 33%;" readonly wrap="off" onscroll="syncScroll('gcodeDisplay')"></textarea>
@@ -83,9 +84,9 @@
         </div>
         <!-- <script type="module" src="./gcode-parser/src/index.js"></script>
         <script type="module" src="./gcode-interpreter/src/index.js"></script> -->
+        <script src="simulator.js"></script>
         <script src="cdpr_websocket.js"></script>
         <script src="parse_gcode.js"></script>
-        <script src="simulator.js"></script>
         <script src="main.js"></script>
     </body>
 </html>

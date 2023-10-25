@@ -13,7 +13,7 @@ function send_line(line) {
       return false;
     }
     const textarea = document.getElementById('sentCommands');
-    textarea.value += l + '\n';
+    textarea.value = (textarea.value + l + '\n').slice(-3000);
     textarea.scrollTop = textarea.scrollHeight;
     websocket.send(l);
   }
