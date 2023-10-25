@@ -26,6 +26,30 @@ This webpage loads a gcode file, parses it, displays it (together with the parse
 * I think cable robot control panel is scaling all the motions, where it's expecting the total robot workspace to be [0, 1] in width and height, so if there are any motions >1m or <0m, you should definitely be careful and read the code yourself thoroughly to make sure of what the cable robot ipad.js code is doing with respect to scaling, and adjust accordingly.
 * Visualize the gcode file / drawing commands.  This shouldn't actually be too hard if we re-use some ipad.js code from `art_skills`.
 
+## Fusion 360 CAM
+1. Load svg or dxf into fusion
+2. Extrude down the entire sketch "canvas" to create a "base plate"
+3. Extrude up the foreground of the sketch
+4. Go to "Manufacture" tab to create a CAM profile.
+
+* To create an outline, use engrave or contour.
+* To create the infill, use 2D Adaptive or 2D pocket
+* For all the toolpaths, in "passes" set tolerance to 1mm (or whatever you want) to speed up the processing
+
+* Engrave
+  * Use v-bit
+  * In "Geometry" tab, first click the "Face Contours" icon to select faces
+  * Tolerance: 1mm
+  * Everything else default
+* 2D Adaptive
+  * Use face end mill
+  * Tolerance: 1mm
+  * Set "Passes" > "Optimal Load" to desired stepover
+  * Everything else default
+    * Full retract
+    * Ramp > Plunge
+
+
 ## svg to gcode
 Temporarily, I tried using this svg2gcode converter: [https://sameer.github.io/svg2gcode/](https://sameer.github.io/svg2gcode/) ([github](https://github.com/sameer/svg2gcode)), but it seems to only be able to handle svg path commands, no circles or rectangles etc.  But as an example, InkScape may be able to do this conversion (see [FAQ](https://github.com/sameer/svg2gcode#faq--interesting-details))
 
