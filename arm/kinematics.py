@@ -37,7 +37,8 @@ JOINT_LIMITS_COUNTS = [
     #    [865, 165],
     [40, 1023],
     [0, 1023],
-    [170, 880],
+    # [170, 880],
+    [78, 964]
 ]
 JOINT_LIMITS_DEG = [
     [util.counts2deg(llim), util.counts2deg(ulim)] for llim, ulim in JOINT_LIMITS_COUNTS
@@ -231,6 +232,7 @@ def ik(T,
             if check_joint_angles:
                 # Check if the joint angles are within the joint limits
                 if not all(np.logical_and(theta >= JOINT_LIMITS[:, 0], theta <= JOINT_LIMITS[:, 1])):
+                    print("\tIK Failed due to Joint Limits!", theta, JOINT_LIMITS)
                     return False, theta
             return True, theta
 

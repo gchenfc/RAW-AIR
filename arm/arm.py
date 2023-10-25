@@ -49,7 +49,8 @@ class PosePathWaypoint:
 class Arm(AX12s):
     # CANVAS_CENTER = np.array([-0.03205, 0.19, 0.2493])  # Klaus
     # CANVAS_CENTER = np.array([-0.03205, 0.207, 0.2493])  # Mobile Frame (DFL)
-    CANVAS_CENTER = np.array([-0.03205, 0.33, 0.2493])  # Library
+    # CANVAS_CENTER = np.array([-0.03205, 0.33, 0.2493])  # Library
+    CANVAS_CENTER = np.array([-0.03205, 0.22, 0.2693])  # Library
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -291,11 +292,20 @@ class Arm(AX12s):
                                  **ik_params)
 
     # Predefined Trajectories
+    HOME = [0, 0, 0, 0, 0]
+    STORAGE = [90, 100, -83, 0, -130]
+    STORAGE_INTERMEDIATE = [90, 75, -81,  0, -109]
     def do_move_home(self, vmax=100, **go_to_kwargs):
+        # First check if we were coming from storage.  If so, use STORAGE_INTERMEDIATE to avoid
+        # bumping into the AprilTag
+        if self.reached_goal(Arm.STORAGE, tol=15):
+            self.go_to_blocking(Arm.STORAGE_INTERMEDIATE, default_speed=vmax, **go_to_kwargs)
         self.go_to_blocking([0, 0, 0, 0, 0], default_speed=vmax, **go_to_kwargs)
 
     def do_move_storage(self, vmax=100, **go_to_kwargs):
-        self.go_to_blocking([90, 100, -140, 0, -100], default_speed=vmax, **go_to_kwargs)
+        self.go_to_blocking(Arm.STORAGE_INTERMEDIATE, default_speed=vmax, **go_to_kwargs)
+        self.go_to_blocking(Arm.STORAGE, default_speed=vmax, **go_to_kwargs)
+        # self.go_to_blocking([90, 100, -140, 0, -100], default_speed=vmax, **go_to_kwargs)
         self.disable_all()
 
     def do_dip(
@@ -312,20 +322,46 @@ class Arm(AX12s):
         verbosity=0,
         vmax=100,
     ):
+        # path = [
+        #     JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
+        #     JointPathWaypoint(q=prep_qs_deg, tol=5, timeout=None, pause=0),  # lower
+        #     JointPathWaypoint(q=hover_qs_deg, tol=5, timeout=None, pause=0),  # hover paint
+        #     JointPathWaypoint(q=dip_qs_deg, tol=5, timeout=None, pause=0),  # dip
+        #     JointPathWaypoint(q=rub1_qs_deg, tol=5, timeout=None, pause=0),  # rub
+        #     JointPathWaypoint(q=rub2_qs_deg, tol=5, timeout=None, pause=0),  # rub
+        #     JointPathWaypoint(q=hover_qs_deg, tol=5, timeout=None, pause=0),  # lift paint
+        #     JointPathWaypoint(q=prep_qs_deg, tol=5, timeout=None, pause=0),  # raise
+        #     JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
+        # ]
+        #   0   0   0   0   0  # Home
+        #  86  84 -82  -0 -98  # Lower
+        #  73  34 -59  -0 -124 # Hover paint
+        #  67  14 -56  -0 -121 # Dip
+        #  61  27 -73  -0 -114 # Rub
+        #  67  32 -79  -0 -104 # Rub
+        #  77  42 -88  -0 -106 # Rub
+        #  68  25 -61  -0 -126 # Rub
+        #  68  24 -47  -0 -136 # Swiping...
+        #  73  34 -59  -0 -124 # Swipe...
+        #  61  65 -69  -0 -127 # Raise
+        #   0   0   0   0   0  # Home
         path = [
             JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
-            JointPathWaypoint(q=prep_qs_deg, tol=5, timeout=None, pause=0),  # lower
-            JointPathWaypoint(q=hover_qs_deg, tol=5, timeout=None, pause=0),  # hover paint
-            JointPathWaypoint(q=dip_qs_deg, tol=5, timeout=None, pause=0),  # dip
-            JointPathWaypoint(q=rub1_qs_deg, tol=5, timeout=None, pause=0),  # rub
-            JointPathWaypoint(q=rub2_qs_deg, tol=5, timeout=None, pause=0),  # rub
-            JointPathWaypoint(q=hover_qs_deg, tol=5, timeout=None, pause=0),  # lift paint
-            JointPathWaypoint(q=prep_qs_deg, tol=5, timeout=None, pause=0),  # raise
+            JointPathWaypoint(q=[86, 84, -82, 0, -98], tol=5, timeout=None, pause=0),  # lower
+            JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # hover paint
+            JointPathWaypoint(q=[67, 14, -56, 0, -121], tol=5, timeout=None, pause=0),  # dip
+            JointPathWaypoint(q=[61, 27, -73, 0, -114], tol=5, timeout=None, pause=0),  # rub
+            JointPathWaypoint(q=[67, 32, -79, 0, -104], tol=5, timeout=None, pause=0),  # rub
+            JointPathWaypoint(q=[77, 42, -88, 0, -106], tol=5, timeout=None, pause=0),  # rub
+            JointPathWaypoint(q=[68, 25, -61, 0, -126], tol=5, timeout=None, pause=0),  # rub
+            JointPathWaypoint(q=[68, 24, -47, 0, -136], tol=5, timeout=None, pause=0),  # swiping...
+            # JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # swipe...
+            JointPathWaypoint(q=[61, 65, -69, 0, -127], tol=5, timeout=None, pause=0),  # raise
             JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
         ]
         self.execute_joint_path(path, verbosity=verbosity, default_speed=vmax)
 
-    def do_prep_paint(self, center=CANVAS_CENTER, ease_dist=0.20, elbow_mode='neg', vmax=100):
+    def do_prep_paint(self, center=CANVAS_CENTER, ease_dist=0.22, elbow_mode='neg', vmax=100):
         return self.go_to_canvas_blocking([0, -ease_dist, 0],
                                           center=center,
                                           elbow_mode=elbow_mode,
