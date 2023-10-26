@@ -50,7 +50,7 @@ class Arm(AX12s):
     # CANVAS_CENTER = np.array([-0.03205, 0.19, 0.2493])  # Klaus
     # CANVAS_CENTER = np.array([-0.03205, 0.207, 0.2493])  # Mobile Frame (DFL)
     # CANVAS_CENTER = np.array([-0.03205, 0.33, 0.2493])  # Library
-    CANVAS_CENTER = np.array([-0.03205, 0.22, 0.2693])  # Library
+    CANVAS_CENTER = np.array([-0.03205, 0.22, 0.2893])  # Library
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -78,17 +78,20 @@ class Arm(AX12s):
         return f'Arm: tip_pos={str(p.round(3)):25}   q={str(q.round(0)):30}'
 
     # Check if the robot is at the goal position
-    def reached_goal(self, goal, tol=5, angles_out=None):
+    def reached_goal(self, goal, tol=5, angles_in=None, angles_out=None):
         if len(goal) == 5:
             goal = [f * a for f, a in zip(JOINT_FLIPS, goal)]
             goal = [goal[0], goal[1], -goal[1], *goal[2:]]
         elif len(goal) != 6:
             raise ValueError('goal must be length 5 or 6')
-        try:
-            actual = self.read_all_joint_angles_deg()
-        except AssertionError as e:
-            self.warn('warning: assertion error in reached_goal: ', e)
-            return False
+        if angles_in is None:
+            try:
+                actual = self.read_all_joint_angles_deg()
+            except AssertionError as e:
+                self.warn('warning: assertion error in reached_goal: ', e)
+                return False
+        else:
+            actual = angles_in
         if angles_out is not None:
             angles_out[:] = actual
         return all([abs(g - a) < tol for g, a in zip(goal, actual)])
@@ -196,6 +199,7 @@ class Arm(AX12s):
             else:
                 print_debug("\nTimeout...  Moving on")
             time.sleep(wp.pause)
+        return True
 
     def execute_pose_path(self,
                           path: list[PosePathWaypoint],
@@ -294,19 +298,61 @@ class Arm(AX12s):
     # Predefined Trajectories
     HOME = [0, 0, 0, 0, 0]
     STORAGE = [90, 100, -83, 0, -130]
-    STORAGE_INTERMEDIATE = [90, 75, -81,  0, -109]
+    # STORAGE_INTERMEDIATE = [90, 75, -81,  0, -109]  # Between HOME and STORAGE to dodge AprilTag
+    STORAGE_INTERMEDIATE = [90, 75, -105,  0, 0]  # Between HOME and STORAGE to dodge AprilTag
+    # PREP_INTERMEDIATE = [-90, 65, -38, 0, -117]
+    PREP_INTERMEDIATE = [[-90, 65, -90, 0, 0], [0, 65, -38, 0, -90]]
+
+    def current_configuration(self):
+        q = self.read_all_joint_angles_deg()
+        q2 = self.joint_angles_deg(all_joint_angles_deg=q)
+        if self.reached_goal(self.HOME, tol=15, angles_in=q):
+            ret = 'HOME'
+        elif self.reached_goal(self.STORAGE, tol=15, angles_in=q):
+            ret = 'STORAGE'
+        elif np.linalg.norm(self.cur_canvas_point(q=q2)) < 0.10:
+            ret = 'PAINT'
+        elif np.linalg.norm(self.cur_canvas_point(q=q2) - np.array([0, -0.22, 0])) < 0.10:
+            ret = 'PREP_PAINT'
+        else:
+            ret = 'UNKNOWN'
+        print("CURRENT CONFIGURATION IS ", ret)
+        return ret
+
     def do_move_home(self, vmax=100, **go_to_kwargs):
-        # First check if we were coming from storage.  If so, use STORAGE_INTERMEDIATE to avoid
-        # bumping into the AprilTag
-        if self.reached_goal(Arm.STORAGE, tol=15):
-            self.go_to_blocking(Arm.STORAGE_INTERMEDIATE, default_speed=vmax, **go_to_kwargs)
-        self.go_to_blocking([0, 0, 0, 0, 0], default_speed=vmax, **go_to_kwargs)
+        def prep():
+            config = self.current_configuration()
+            if config == 'STORAGE':
+                return self.go_to_blocking(Arm.STORAGE_INTERMEDIATE,
+                                           default_speed=vmax,
+                                           **go_to_kwargs)
+            elif config == 'PAINT':
+                return self.do_prep_paint() and prep()
+            elif config == 'PREP_PAINT':
+                return all(
+                    self.go_to_blocking(q, default_speed=vmax, **go_to_kwargs)
+                    for q in reversed(Arm.PREP_INTERMEDIATE))
+            return True
+
+        return (prep() and
+                self.go_to_blocking([0, 0, 0, 0, 0], default_speed=vmax, **go_to_kwargs))
 
     def do_move_storage(self, vmax=100, **go_to_kwargs):
-        self.go_to_blocking(Arm.STORAGE_INTERMEDIATE, default_speed=vmax, **go_to_kwargs)
-        self.go_to_blocking(Arm.STORAGE, default_speed=vmax, **go_to_kwargs)
-        # self.go_to_blocking([90, 100, -140, 0, -100], default_speed=vmax, **go_to_kwargs)
-        self.disable_all()
+        def prep():
+            config = self.current_configuration()
+            if config == 'STORAGE':
+                return True
+            elif config != 'HOME':
+                return self.do_move_home() and prep()
+            elif config == 'HOME':
+                return self.go_to_blocking(Arm.STORAGE_INTERMEDIATE,
+                                           default_speed=vmax,
+                                           **go_to_kwargs)
+            return False
+
+        return (prep() and
+                self.go_to_blocking(Arm.STORAGE, default_speed=vmax, **go_to_kwargs) and
+                self.disable_all())
 
     def do_dip(
         self,
@@ -322,6 +368,8 @@ class Arm(AX12s):
         verbosity=0,
         vmax=100,
     ):
+        if self.current_configuration() != 'HOME':
+            self.do_move_home()
         # path = [
         #     JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
         #     JointPathWaypoint(q=prep_qs_deg, tol=5, timeout=None, pause=0),  # lower
@@ -347,7 +395,7 @@ class Arm(AX12s):
         #   0   0   0   0   0  # Home
         path = [
             JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
-            JointPathWaypoint(q=[86, 84, -82, 0, -98], tol=5, timeout=None, pause=0),  # lower
+            JointPathWaypoint(q=[86, 84, -70, 0, -98], tol=5, timeout=None, pause=0),  # lower
             JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # hover paint
             JointPathWaypoint(q=[67, 14, -56, 0, -121], tol=5, timeout=None, pause=0),  # dip
             JointPathWaypoint(q=[61, 27, -73, 0, -114], tol=5, timeout=None, pause=0),  # rub
@@ -357,19 +405,34 @@ class Arm(AX12s):
             JointPathWaypoint(q=[68, 24, -47, 0, -136], tol=5, timeout=None, pause=0),  # swiping...
             # JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # swipe...
             JointPathWaypoint(q=[61, 65, -69, 0, -127], tol=5, timeout=None, pause=0),  # raise
+            JointPathWaypoint(q=[86, 84, -70, 0, -98], tol=5, timeout=None, pause=0),  # raise
             JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
         ]
         self.execute_joint_path(path, verbosity=verbosity, default_speed=vmax)
 
     def do_prep_paint(self, center=CANVAS_CENTER, ease_dist=0.22, elbow_mode='neg', vmax=100):
-        return self.go_to_canvas_blocking([0, -ease_dist, 0],
-                                          center=center,
-                                          elbow_mode=elbow_mode,
-                                          default_speed=vmax)
+        kwargs = dict(center=center, elbow_mode=elbow_mode, default_speed=vmax)
+        def prep():
+            config = self.current_configuration()
+            if config == 'PAINT':
+                return self.go_to_canvas_blocking([0, -0.05, 0.02], **kwargs)
+            elif config == 'STORAGE':
+                return self.do_move_home()
+            elif config == 'HOME':
+                return all(
+                    self.go_to_blocking(q, default_speed=vmax) for q in Arm.PREP_INTERMEDIATE)
+            return True
+
+        return (prep() and self.go_to_canvas_blocking([0, -ease_dist, 0], **kwargs))
 
     def do_start_paint(self, center=CANVAS_CENTER, angle=-np.pi / 2, elbow_mode='neg', vmax=100):
-        return self.go_to_canvas_blocking([0, 0, 0],
-                                          center=center,
-                                          angle=angle,
-                                          elbow_mode=elbow_mode,
-                                          default_speed=vmax)
+        kwargs = dict(center=center, angle=angle, elbow_mode=elbow_mode, default_speed=vmax)
+
+        def prep():
+            config = self.current_configuration()
+            if config == 'PAINT' or config == 'PREP_PAINT':
+                return True
+            else:
+                return self.do_prep_paint()
+
+        return (prep() and self.go_to_canvas_blocking([0, 0, 0], **kwargs))

@@ -300,8 +300,11 @@ class AX12s(AX12):
             counts2deg(id, m.data.value())
             for id, m in enumerate(self.read_all(AX12.PRESENT_POSITION, 2))
         ]
-    def joint_angles_deg(self):
-        ret = self.read_all_joint_angles_deg()
+    def joint_angles_deg(self, all_joint_angles_deg=None):
+        if all_joint_angles_deg is None:
+            ret = self.read_all_joint_angles_deg()
+        else:
+            ret = all_joint_angles_deg
         assert len(ret) == 6, f'Error reading joint angles: {ret = }'
         angles = [ret[0], (ret[1] - ret[2]) / 2, ret[3], ret[4], ret[5]]
         return [f * a for f, a in zip(JOINT_FLIPS, angles)]
