@@ -395,6 +395,7 @@ class Arm(AX12s):
         #   0   0   0   0   0  # Home
         path = [
             JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
+            JointPathWaypoint(q=[90, 0, 0, 0, 0], tol=5, timeout=None, pause=0, speeds=[300, 0, 0, 0, 0]),  # rot
             JointPathWaypoint(q=[86, 84, -70, 0, -98], tol=5, timeout=None, pause=0),  # lower
             JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # hover paint
             JointPathWaypoint(q=[67, 14, -56, 0, -121], tol=5, timeout=None, pause=0),  # dip
@@ -406,7 +407,8 @@ class Arm(AX12s):
             # JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # swipe...
             JointPathWaypoint(q=[61, 65, -69, 0, -127], tol=5, timeout=None, pause=0),  # raise
             JointPathWaypoint(q=[86, 84, -70, 0, -98], tol=5, timeout=None, pause=0),  # raise
-            JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
+            JointPathWaypoint(q=[90, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # rot
+            JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0, speeds=[300, 0, 0, 0, 0]),  # home
         ]
         self.execute_joint_path(path, verbosity=verbosity, default_speed=vmax)
 
@@ -415,7 +417,7 @@ class Arm(AX12s):
         def prep():
             config = self.current_configuration()
             if config == 'PAINT':
-                return self.go_to_canvas_blocking([0, -0.05, 0.02], **kwargs)
+                return self.go_to_canvas_blocking([0, -0.05, 0], angle=-1.45, **kwargs)
             elif config == 'STORAGE':
                 return self.do_move_home()
             elif config == 'HOME':
