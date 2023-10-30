@@ -45,6 +45,7 @@ This webpage loads a gcode file, parses it, displays it (together with the parse
   * Use face end mill
   * Tolerance: 1mm
   * Set "Passes" > "Optimal Load" to desired stepover
+  * Set "Passes" > "Smoothing" on
   * Everything else default
     * Full retract
     * Ramp > Plunge

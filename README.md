@@ -35,13 +35,19 @@ gs0;kd0.25;gs1;kd0.25;gs2;kd0.25;gs0
 gs0;kKL16;kKm150;kKM300;gs1;kKL16;kKm150;kKM300;gs2;kKL16;kKm150;kKM300;gs0
 gs1;xA0.03;gs0
 gs0;xs0.1;xa0.5;gs0
-0n15c10,30;1n15c10,30;2n15c10,30;3n15c10,30
+0n15c10,15;1n15c10,30;2n15c10,30;3n15c10,15
 ```
 
 single window pane:
 ```
-xLl2.24;xLr3.805;xLu2.40  # old
-xLl1.926;xLr3.86;xLu2.40
+xLl2.24;xLr3.805;xLu2.30  # old
+xLl1.926;xLr3.86;xLu2.30  # new
+
+# for control
+gs0;xLl1.926;xLr3.86;xLd0.0;xLu2.30;gs1;xLl1.926;xLr3.86;xLd0.0;xLu2.30;gs2;xLl1.926;xLr3.86;xLd0.0;xLu2.30;gs0
+
+# for bottom safety
+gs0;xLl1.926;xLr3.86;xLd0.0;xLu2.30;gs1;xLl1.926;xLr3.86;xLd0.70;xLu2.30;gs2;xLl1.926;xLr3.86;xLd0.0;xLu2.30;gs0
 ```
 
 Individual controller mode:
@@ -59,11 +65,20 @@ xs0.1;xa0.5
 * [ ] Brush tool-rest
   * [x] Brush-to-arm mount
   * [x] Tool-rest
+    * [ ] Fix issue where after ~1hr of operation the servos get tired and might miss the tool-rest
   * [ ] Paint bucket
-* [ ] Make brush/arm trajectories so that they don't crash into the mullions
-* [ ] Fix bug where sometimes if the callback isn't called (e.g. manually disrupted) then the state machine won't proceed
-* [ ] Add a "pause" button that pauses the painting execution without disrupting the state
+* [x] Make brush/arm trajectories so that they don't crash into the mullions
+* [x] Fix bug where sometimes if the callback isn't called (e.g. manually disrupted) then the state machine won't proceed
+  * Resolved with the pause/resume buttons, by just pausing and re-resuming, you can get the robot out of the stuck state.
+* [x] Add a "pause" button that pauses the painting execution without disrupting the state
 * [x] Update the gcode_webpage to display the "current line" more efficiently, because currently it's very slow to re-write the entire tex box each time
-* [ ] Figure out why sometimes one motor dies (probably because the phase wires are loose)
-* [ ] Arm State-tracker to make sure the arm always goes through the appropriate intermediate configurations, e.g. if in "paint", go to "prep" before going to "home" or "dip".
+* [x] Figure out why sometimes one motor dies (probably because the phase wires are loose)
+  * I think it was because the encoder was slipping.  I remounted it more centered and more securely, so we'll see if it's resolved.
+  * Edit: found another issue which was that the phase wire screw terminals were loose.  In particular, motor 3's middle phase wire melted the plastic and caused too much contact resistance error-ing out the Odrive.  I needed to solder the phase wires to fix it.  I tightened all the phase wires (many were very loose) so hopefully that resolves it.  Lesson for the future: always make sure the phase wires are tight, and they may loosen over time so periodically check, especially if the motors are having intermittent connection issues.
+* [x] Arm State-tracker to make sure the arm always goes through the appropriate intermediate configurations, e.g. if in "paint", go to "prep" before going to "home" or "dip".
+* [x] Add ETA timer
 
+
+
+
+* pause button & manual override state button

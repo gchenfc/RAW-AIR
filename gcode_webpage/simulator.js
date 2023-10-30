@@ -7,7 +7,7 @@ const BRUSH_DIAMETER = 0.025; // mm
 const CURSOR_SIZE = 40; // Units
 
 // BOUNDS = {Y: [1, 1.7], X: [2.3, 3.6]}
-BOUNDS = {Y: [0.65, 2.4], X: [1.926, 3.86]}
+BOUNDS = {Y: [0.70, 2.3], X: [1.926, 3.86]}
 
 // Get the canvas with ID "previewCanvas"
 const canvas = document.getElementById("previewCanvas");
