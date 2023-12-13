@@ -299,9 +299,14 @@ class Arm(AX12s):
     HOME = [0, 0, 0, 0, 0]
     STORAGE = [90, 100, -83, 0, -130]
     # STORAGE_INTERMEDIATE = [90, 75, -81,  0, -109]  # Between HOME and STORAGE to dodge AprilTag
-    STORAGE_INTERMEDIATE = [90, 75, -105,  0, 0]  # Between HOME and STORAGE to dodge AprilTag
+    STORAGE_INTERMEDIATE = [90, 75, -90,  0, 0]  # Between HOME and STORAGE to dodge AprilTag
     # PREP_INTERMEDIATE = [-90, 65, -38, 0, -117]
     PREP_INTERMEDIATE = [[-90, 65, -90, 0, 0], [0, 65, -38, 0, -90]]
+    # PREP_TO_DIP = [[0, 65, -38, 0, -90]]
+    # PREP_TO_DIP = [[-61,  72, -47,  -1, -123], [-132,  27, -56,  -1, -124]]
+    # PREP_TO_DIP = [[-61,  72, -52,  -1, -118], [-132,  27, -56,  -1, -124]]
+    PREP_TO_DIP = [[-61,  72, -52,  -1, -108]]#, [-132,  27, -56,  -1, -124]]
+    # PREP_TO_DIP = [[0,  67, -38,  -1, -75], [-69,  84, -79,  -1, -75], [-132,  27, -56,  -1, -124]]
 
     def current_configuration(self):
         q = self.read_all_joint_angles_deg()
@@ -323,9 +328,12 @@ class Arm(AX12s):
         def prep():
             config = self.current_configuration()
             if config == 'STORAGE':
-                return self.go_to_blocking(Arm.STORAGE_INTERMEDIATE,
-                                           default_speed=vmax,
-                                           **go_to_kwargs)
+                return (#self.go_to_blocking([90, 90, -71, 0, -30],
+                         #                   default_speed=vmax,
+                          #                  **go_to_kwargs) and
+                        self.go_to_blocking(Arm.STORAGE_INTERMEDIATE,
+                                            default_speed=vmax,
+                                            **go_to_kwargs))
             elif config == 'PAINT':
                 return self.do_prep_paint() and prep()
             elif config == 'PREP_PAINT':
@@ -368,8 +376,23 @@ class Arm(AX12s):
         verbosity=0,
         vmax=100,
     ):
+        if self.current_configuration() == 'PAINT':
+            assert self.do_prep_paint()
+        if self.current_configuration() == 'PREP_PAINT':
+            path = [*[JointPathWaypoint(q=q, tol=5, timeout=None, pause=0) for q in Arm.PREP_TO_DIP],
+
+                    JointPathWaypoint(q=[-146,  20, -49,  -1, -122], tol=5, timeout=None, pause=0),  # hover paint
+                    JointPathWaypoint(q=[-146, -28, -55,  -1, -101], tol=5, timeout=None, pause=0),  # dip
+                    JointPathWaypoint(q=[-133,   8, -88,  -1, -85], tol=5, timeout=None, pause=0),  # swipe paint
+                    JointPathWaypoint(q=[-128,  24, -92,  -1, -86], tol=5, timeout=None, pause=0),  # swipe paint
+                    JointPathWaypoint(q=[-120,  32, -93,  -1, -87], tol=5, timeout=None, pause=0),  # swipe paint
+                    JointPathWaypoint(q=[-146,  20, -49,  -1, -122], tol=5, timeout=None, pause=0),  # hover paint
+
+                    *[JointPathWaypoint(q=q, tol=5, timeout=None, pause=0) for q in reversed(Arm.PREP_TO_DIP)]
+                    ]
+            return self.execute_joint_path(path, verbosity=verbosity, default_speed=vmax) and self.do_prep_paint()
         if self.current_configuration() != 'HOME':
-            self.do_move_home()
+            assert self.do_move_home()
         # path = [
         #     JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
         #     JointPathWaypoint(q=prep_qs_deg, tol=5, timeout=None, pause=0),  # lower
@@ -393,22 +416,53 @@ class Arm(AX12s):
         #  73  34 -59  -0 -124 # Swipe...
         #  61  65 -69  -0 -127 # Raise
         #   0   0   0   0   0  # Home
+        # path = [
+        #     JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
+        #     JointPathWaypoint(q=[90, 0, 0, 0, 0], tol=5, timeout=None, pause=0, speeds=[300, 0, 0, 0, 0]),  # rot
+        #     JointPathWaypoint(q=[86, 84, -70, 0, -98], tol=5, timeout=None, pause=0),  # lower
+        #     JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # hover paint
+        #     JointPathWaypoint(q=[67, 14, -56, 0, -121], tol=5, timeout=None, pause=0),  # dip
+        #     JointPathWaypoint(q=[61, 27, -73, 0, -114], tol=5, timeout=None, pause=0),  # rub
+        #     JointPathWaypoint(q=[67, 32, -79, 0, -104], tol=5, timeout=None, pause=0),  # rub
+        #     JointPathWaypoint(q=[77, 42, -88, 0, -106], tol=5, timeout=None, pause=0),  # rub
+        #     JointPathWaypoint(q=[68, 25, -61, 0, -126], tol=5, timeout=None, pause=0),  # rub
+        #     JointPathWaypoint(q=[68, 24, -47, 0, -136], tol=5, timeout=None, pause=0),  # swiping...
+        #     # JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # swipe...
+        #     JointPathWaypoint(q=[61, 65, -69, 0, -127], tol=5, timeout=None, pause=0),  # raise
+        #     JointPathWaypoint(q=[86, 84, -70, 0, -98], tol=5, timeout=None, pause=0),  # raise
+        #     JointPathWaypoint(q=[90, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # rot
+        #     JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0, speeds=[300, 0, 0, 0, 0]),  # home
+        # ]
         path = [
             JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # home
-            JointPathWaypoint(q=[90, 0, 0, 0, 0], tol=5, timeout=None, pause=0, speeds=[300, 0, 0, 0, 0]),  # rot
-            JointPathWaypoint(q=[86, 84, -70, 0, -98], tol=5, timeout=None, pause=0),  # lower
-            JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # hover paint
-            JointPathWaypoint(q=[67, 14, -56, 0, -121], tol=5, timeout=None, pause=0),  # dip
-            JointPathWaypoint(q=[61, 27, -73, 0, -114], tol=5, timeout=None, pause=0),  # rub
-            JointPathWaypoint(q=[67, 32, -79, 0, -104], tol=5, timeout=None, pause=0),  # rub
-            JointPathWaypoint(q=[77, 42, -88, 0, -106], tol=5, timeout=None, pause=0),  # rub
-            JointPathWaypoint(q=[68, 25, -61, 0, -126], tol=5, timeout=None, pause=0),  # rub
-            JointPathWaypoint(q=[68, 24, -47, 0, -136], tol=5, timeout=None, pause=0),  # swiping...
+            JointPathWaypoint(q=[-91, 0, 0, 0, 0], tol=5, timeout=None, pause=0, speeds=[250, 0, 0, 0, 0]),  # rot
+            JointPathWaypoint(q=[-146,  26, -46,  -1, -27], tol=5, timeout=None, pause=0),  # lower
+            JointPathWaypoint(q=[-146,  20, -49,  -1, -122], tol=5, timeout=None, pause=0),  # hover paint
+
+            JointPathWaypoint(q=[-146, -28, -55,  -1, -101], tol=5, timeout=None, pause=0),  # dip
+
+            # JointPathWaypoint(q=[61, 27, -73, 0, -114], tol=5, timeout=None, pause=0),  # rub
+            # JointPathWaypoint(q=[67, 32, -79, 0, -104], tol=5, timeout=None, pause=0),  # rub
+            # JointPathWaypoint(q=[77, 42, -88, 0, -106], tol=5, timeout=None, pause=0),  # rub
+            # JointPathWaypoint(q=[68, 25, -61, 0, -126], tol=5, timeout=None, pause=0),  # rub
+
+            # JointPathWaypoint(q=[68, 24, -47, 0, -136], tol=5, timeout=None, pause=0),  # swiping...
             # JointPathWaypoint(q=[73, 34, -59, 0, -124], tol=5, timeout=None, pause=0),  # swipe...
-            JointPathWaypoint(q=[61, 65, -69, 0, -127], tol=5, timeout=None, pause=0),  # raise
-            JointPathWaypoint(q=[86, 84, -70, 0, -98], tol=5, timeout=None, pause=0),  # raise
-            JointPathWaypoint(q=[90, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # rot
-            JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0, speeds=[300, 0, 0, 0, 0]),  # home
+
+            # JointPathWaypoint(q=[-142,  23, -105,  -1, -77], tol=5, timeout=None, pause=0),  # swipe paint
+            # JointPathWaypoint(q=[-142,  30, -99,  -1, -84], tol=5, timeout=None, pause=0),  # swipe paint
+            JointPathWaypoint(q=[-133,   8, -88,  -1, -85], tol=5, timeout=None, pause=0),  # swipe paint
+            JointPathWaypoint(q=[-128,  24, -92,  -1, -86], tol=5, timeout=None, pause=0),  # swipe paint
+            JointPathWaypoint(q=[-120,  32, -93,  -1, -87], tol=5, timeout=None, pause=0),  # swipe paint
+            # JointPathWaypoint(q=[-120,  21, -95,  -1, -79], tol=5, timeout=None, pause=0),  # swipe paint
+            # JointPathWaypoint(q=[-150,  20, -90,  -1, -90], tol=5, timeout=None, pause=0),  # swipe paint
+            # JointPathWaypoint(q=[-150,  27, -87,  -1, -100], tol=5, timeout=None, pause=0),  # swipe paint
+
+            JointPathWaypoint(q=[-146,  20, -49,  -1, -122], tol=5, timeout=None, pause=0),  # hover paint
+            JointPathWaypoint(q=[-146,  26, -26,  -1, -27], tol=5, timeout=None, pause=0),  # lower
+            JointPathWaypoint(q=[-91, 0, 0, 0, 0], tol=5, timeout=None, pause=0),  # rot
+
+            JointPathWaypoint(q=[0, 0, 0, 0, 0], tol=5, timeout=None, pause=0, speeds=[250, 0, 0, 0, 0]),  # home
         ]
         self.execute_joint_path(path, verbosity=verbosity, default_speed=vmax)
 
@@ -417,7 +471,7 @@ class Arm(AX12s):
         def prep():
             config = self.current_configuration()
             if config == 'PAINT':
-                return self.go_to_canvas_blocking([0, -0.05, 0], angle=-1.45, **kwargs)
+                return self.go_to_canvas_blocking([0, -0.05, 0.04], angle=-1.45, **kwargs)
             elif config == 'STORAGE':
                 return self.do_move_home()
             elif config == 'HOME':
@@ -430,9 +484,26 @@ class Arm(AX12s):
     def do_start_paint(self, center=CANVAS_CENTER, angle=-np.pi / 2, elbow_mode='neg', vmax=100):
         kwargs = dict(center=center, angle=angle, elbow_mode=elbow_mode, default_speed=vmax)
 
+        def go_to_canvas_alt(goal, center=center, angle=-np.pi / 2, elbow_mode='neg', ik_params={}, **kwargs):
+            j = self.canvas2joint(goal, center=center, angle=angle, elbow_mode=elbow_mode)
+            assert abs(j[0]) < 1e-1, "FAILED, j[0] != 0, " + str(j)
+            j[0] = 5
+            return self.go_to_blocking(j, **kwargs)
+
         def prep():
             config = self.current_configuration()
-            if config == 'PAINT' or config == 'PREP_PAINT':
+            if config == 'PREP_PAINT':
+                kwargs2 = {k:v for k,v in kwargs.items() if k != 'angle'}
+                # return self.go_to_canvas_blocking([0, -0.05, 0.05], angle=-np.pi/2 + 0.2, tol=2, **kwargs2)
+                # assert go_to_canvas_alt([0, -0.05, 0.04], angle=-np.pi/2 + 0.2, tol=5, **kwargs2)
+                assert go_to_canvas_alt([0, -0.05, 0.03], angle=-np.pi/2 + 0.2, tol=5, **kwargs2)
+                # self.set_compliance_slopes(8)
+                # # time.sleep(0.5)
+                # # self.set_compliance_slopes(1)
+                # assert go_to_canvas_alt([0, -0.05, 0.03], angle=-np.pi/2, tol=2, **kwargs2)
+                # self.set_compliance_slopes(32)
+                return True
+            if config == 'PAINT':
                 return True
             else:
                 return self.do_prep_paint()
