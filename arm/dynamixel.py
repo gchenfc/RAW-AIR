@@ -240,12 +240,18 @@ class AX12s(AX12):
             value = int2bytes(value, nbytes)
         return self.sync_write(addr, [(i, value) for i in range(6)])
     def read_all(self, addr: Byte, length: Byte = 1):
+        ask_fn = lambda id: self.read_data(id, addr, length)
+        return self.ask_and_get_reply(ask_fn, exp_data_bytes=length)
+    def ping_all(self):
+        result = self.ask_and_get_reply(self.ping, exp_data_bytes=0)
+        return [res.error for res in result]
+    def ask_and_get_reply(self, ask_fn, exp_data_bytes = 1):
         for id in range(6):
-            self.read_data(id, addr, length)
+            ask_fn(id)
         ret = []
         tstart = time.time()
         while len(ret) < 6 and time.time() - tstart < self.read_all_timeout:
-            ret += list(self.read_all_msgs(exp_data_bytes=length))
+            ret += list(self.read_all_msgs(exp_data_bytes=exp_data_bytes))
         if len(ret) < 6:  # re-query the missing values
             self.warn('warning: read_all timed out, trying to re-query for missing values')
             new_ret = [None for _ in range(6)]
@@ -254,11 +260,11 @@ class AX12s(AX12):
             for id in range(6):
                 if new_ret[id] is None:
                     self.warn(f'\tre-querying {id=}')
-                    self.read_data(id, addr, length)
+                    ask_fn(id)
             tstart = time.time()
             while (any(status is None for status in new_ret) and
                    (time.time() - tstart < self.read_all_timeout)):
-                for status in self.read_all_msgs(exp_data_bytes=length):
+                for status in self.read_all_msgs(exp_data_bytes=exp_data_bytes):
                     new_ret[status.id] = status
             ret = [status for status in new_ret if status is not None]
             assert len(ret) == 6, f'Error reading all: {ret = }'
@@ -311,6 +317,8 @@ class AX12s(AX12):
     def joint_angles_string(self):
         joint_angles = self.joint_angles_deg()
         return ' '.join([f'{angle:3.0f}' for angle in joint_angles])
+    def read_temperatures(self):
+        return [m.data.value() for m in self.read_all(AX12.PRESENT_TEMPERATURE, 1)]
 
     def command_angle(self, id: Byte, angle: float):
         # When writing goal position, also write speed since sometimes it gets reset to 0 due to brownout and moves really fast

@@ -104,6 +104,8 @@ async def rpc_call(arm: Arm, method_name, *method_params, **method_kwargs):
         result = arm.cur_canvas_point(*method_params, **method_kwargs)
 
     # AX12s functions
+    elif method_name == 'arm.ping_all':
+        result = arm.ping_all(*method_params, **method_kwargs)
     elif method_name == 'arm.write_all':
         result = arm.write_all(*method_params, **method_kwargs)
     elif method_name == 'arm.read_all':
@@ -130,6 +132,8 @@ async def rpc_call(arm: Arm, method_name, *method_params, **method_kwargs):
         result = arm.command_angle(*method_params, **method_kwargs)
     elif method_name == 'arm.command_angles_deg':
         result = arm.command_angles_deg(*method_params, **method_kwargs)
+    elif method_name == 'arm.read_temperatures':
+        result = arm.read_temperatures(*method_params, **method_kwargs)
 
     else:
         # If the method name is not recognized, raise an exception with an error message
