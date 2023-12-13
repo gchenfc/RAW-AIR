@@ -2,7 +2,7 @@ let units_to_m = 0.001;
 
 // let gcode_translate = { X: 2, Y: 0 }, gcode_scale = 2;
 // let gcode_translate = { X: 2.45, Y: 0.9 }, gcode_scale = 1.0;
-let gcode_translate = { X: BOUNDS.X[0], Y: BOUNDS.Y[0] }, gcode_scale = 1.0;
+let gcode_translate = { X: BOUNDS.X[0], Y: BOUNDS.Y[0] }, gcode_scale_x = 1.0, gcode_scale_y = 1.0;
 
 function updateValue(id, target, message, checkPositive = false) {
   let value = parseFloat(document.getElementById(id).value);
@@ -15,10 +15,12 @@ function updateValue(id, target, message, checkPositive = false) {
 }
 function updateTranslateX() { gcode_translate.X = updateValue('translateX', gcode_translate.X, 'X translation'); }
 function updateTranslateY() { gcode_translate.Y = updateValue('translateY', gcode_translate.Y, 'Y translation'); }
-function updateScale() { gcode_scale = updateValue('scaleValue', gcode_scale, 'Scale', true); }
+function updateScaleX() { gcode_scale_x = updateValue('scaleValueX', gcode_scale_x, 'ScaleX', true); }
+function updateScaleY() { gcode_scale_y = updateValue('scaleValueY', gcode_scale_y, 'ScaleY', true); }
 document.getElementById('translateX').value = gcode_translate.X;
 document.getElementById('translateY').value = gcode_translate.Y;
-document.getElementById('scaleValue').value = gcode_scale;
+document.getElementById('scaleValueX').value = gcode_scale_x;
+document.getElementById('scaleValueY').value = gcode_scale_y;
 
 CALLBACKS_READABLE = {
   undefined: (args) => '',
@@ -57,7 +59,8 @@ function parseGCodeLine(line, callbacks = CALLBACKS_CDPR_COMMAND, display_callba
   const command = parts[0];
   const args = parts.slice(1).reduce((acc, arg) => {
     const [letter, ...value] = arg;
-    acc[letter] = parseFloat(value.join('')) * units_to_m * gcode_scale + gcode_translate[letter.toUpperCase()];
+    const scale = letter.toUpperCase() === 'X' ? gcode_scale_x : gcode_scale_y;
+    acc[letter] = parseFloat(value.join('')) * units_to_m * scale + gcode_translate[letter.toUpperCase()];
     return acc;
   }, {});
 
