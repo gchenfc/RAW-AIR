@@ -7,7 +7,9 @@ const BRUSH_DIAMETER = 0.025; // mm
 const CURSOR_SIZE = 40; // Units
 
 // BOUNDS = {Y: [0.70, 2.3], X: [2.0, 3.93]}
-BOUNDS = {Y: [0.65, 2.35], X: [1.9, 3.98]}
+// BOUNDS = {Y: [0.65, 2.35], X: [1.9, 3.98]}
+// These are limits without 60mm buffer, but brush-radius buffer
+BOUNDS = {Y: [0.628, 2.411], X: [1.9262, 4.0222]}
 
 // Get the canvas with ID "previewCanvas"
 const canvas = document.getElementById("previewCanvas");

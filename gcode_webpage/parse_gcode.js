@@ -2,7 +2,9 @@ let units_to_m = 0.001;
 
 // let gcode_translate = { X: 2, Y: 0 }, gcode_scale = 2;
 // let gcode_translate = { X: 2.45, Y: 0.9 }, gcode_scale = 1.0;
-let gcode_translate = { X: BOUNDS.X[0], Y: BOUNDS.Y[0] }, gcode_scale_x = 1.0, gcode_scale_y = 1.0;
+// let gcode_translate = { X: BOUNDS.X[0], Y: BOUNDS.Y[0] }, gcode_scale_x = 1.0, gcode_scale_y = 1.0;
+let gcode_translate = { X: 1.9667, Y: 0.6685 }, gcode_scale_x = 1.0, gcode_scale_y = 1.0;
+let homography = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 
 function updateValue(id, target, message, checkPositive = false) {
   let value = parseFloat(document.getElementById(id).value);
@@ -21,6 +23,15 @@ document.getElementById('translateX').value = gcode_translate.X;
 document.getElementById('translateY').value = gcode_translate.Y;
 document.getElementById('scaleValueX').value = gcode_scale_x;
 document.getElementById('scaleValueY').value = gcode_scale_y;
+function updateHomography() {
+  let value = JSON.parse(document.getElementById('homography').value);
+  if (value.length != 3 || value[0].length != 3 || value[1].length != 3 || value[2].length != 3) {
+    alert('Please enter a valid 3x3 matrix for the homography.');
+    return;
+  }
+  homography = value;
+}
+document.getElementById('homography').value = JSON.stringify(homography);
 
 CALLBACKS_READABLE = {
   undefined: (args) => '',
@@ -60,9 +71,23 @@ function parseGCodeLine(line, callbacks = CALLBACKS_CDPR_COMMAND, display_callba
   const args = parts.slice(1).reduce((acc, arg) => {
     const [letter, ...value] = arg;
     const scale = letter.toUpperCase() === 'X' ? gcode_scale_x : gcode_scale_y;
-    acc[letter] = parseFloat(value.join('')) * units_to_m * scale + gcode_translate[letter.toUpperCase()];
+    acc[letter.toUpperCase()] = parseFloat(value.join('')) * units_to_m * scale + gcode_translate[letter.toUpperCase()];
     return acc;
   }, {});
+  if (command == 'G0') {
+    console.log(args);
+  }
+  if (("X" in args) && ("Y" in args)) {
+    const x = args.X, y = args.Y;
+    args.X = x * homography[0][0] + y * homography[0][1] + homography[0][2];
+    args.Y = x * homography[1][0] + y * homography[1][1] + homography[1][2];
+    const w = x * homography[2][0] + y * homography[2][1] + homography[2][2];
+    args.X /= w;
+    args.Y /= w;
+  }
+  if (command == 'G0') {
+    console.log(args);
+  }
 
   ret = callbacks[command] ? callbacks[command](args) : callbacks.default(command, args, line);
   display_callback(ret);
