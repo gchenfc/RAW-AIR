@@ -12,6 +12,35 @@ Code for Tristan's and my [GT Library's Artist-in-residence](https://library.gat
   * Verify that "websocket connected :)" is green
 * Continuous Recalibration (cable-robot/src/apriltag/continuous_recalibration.py)
 
+## SOP
+1. Cable Robot
+   1. Calibrate
+      1. `c4`
+      2. Press controller `4/x` to activate motors in "HOLD" mode
+      3. Move around to make sure cables are wound nicely
+      4. Move to center of sandbags
+      5. `c14`
+   2. Set configuration
+      1. Copy-paste the lines below
+   3. Set limits
+      1. press controller `4/X` then `1/Y` to switch to "TRACKING" mode
+      2. Move to limits, record, and update
+      3. Switch to "HOLD" mode when done, to be safe
+2. Arm
+   1. Turn on arm
+   2. Launch Arm Server
+   3. Ensure connection by pressing "Get Angles" on cable robot control panel
+3. gcode interpreter
+   1. Launch Cable Robot Server
+   2. Set correct ip address in cdpr_websocket.js (ensure VPNs are turned off)
+   3. Open gcode_webpage/index.html
+   4. Verify "websocket connected" is green.
+4. Start Running
+   1. Switch to "gs1" mode if not already
+   2. Load up the stroke(s) from the gcode_webpage
+      1. oeu
+   3. Switch to "TRACKING" mode and the robot should start painting
+
 ## Cable Robot
 * Turn down speed to ts0.04
 * Turn down speed in cdpr.js to 0.04
@@ -56,6 +85,10 @@ gs0;xLl2.0;xLr3.93;xLd0.0;xLu2.30;gs1;xLl2.0;xLr3.93;xLd0.65;xLu2.30;gs2;xLl2.0;
 
 # tight
 gs0;xLl1.9;xLr3.98;xLd0.65;xLu2.35;gs1;xLl1.9;xLr3.98;xLd0.65;xLu2.35;gs2;xLl1.9;xLr3.98;xLd0.65;xLu2.35;gs0
+
+
+
+gs0;xLl1.9;xLr3.98;xLd0.65;xLu2.25;gs1;xLl1.9;xLr3.98;xLd0.65;xLu2.25;gs2;xLl1.9;xLr3.98;xLd0.65;xLu2.25;gs0
 ```
 
 Individual controller mode:
@@ -79,6 +112,8 @@ gcode webpage params:
 ## Fixing weak/slack cables or poor tracking control
 
 This is due to motor encoders slipping causing motors to go out of calibration.  We just need to recalibrate the motors.
+
+*Expect the lines to be up* (fill in this description)
 
 1. On the GUI, Press "pause"
 2. On the gamepad, press "4"/"X" to switch to "hold" mode.
@@ -104,7 +139,7 @@ This is due to motor encoders slipping causing motors to go out of calibration. 
   * [x] Brush-to-arm mount
   * [x] Tool-rest
     * [x] Fix issue where after ~1hr of operation the servos get tired and might miss the tool-rest
-    * [ ] Make cone horn slipperier
+    * [x] Make cone horn slipperier
     * [ ] More testing of horn alignment when servos get hot
   * [x] Paint bucket
 * [x] Make brush/arm trajectories so that they don't crash into the mullions
@@ -122,6 +157,15 @@ This is due to motor encoders slipping causing motors to go out of calibration. 
 * [ ] Resolve why sometimes cable robot motors get misaligned
 * [ ] Bring in different computer/laptop
 * [x] Test edge half-panels - can reach when motors calibrated, seems pretty accurate too but a little warped
-
+* [x] Set screws in the other 3 motors
+* [x] Program 4-corner calibration
+  * Currently this is part of the calibration script.  There's also a homography computation if lazy.
 
 42m
+
+# Pane parameters
+
+* Unsplit panes: 84" x 71.5"
+* Split panes: 72" x 71.5"
+
+60mm buffer on each side
