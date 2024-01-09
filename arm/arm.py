@@ -383,9 +383,9 @@ class Arm(AX12s):
 
                     JointPathWaypoint(q=[-146,  20, -49,  -1, -122], tol=5, timeout=None, pause=0),  # hover paint
                     JointPathWaypoint(q=[-146, -28, -55,  -1, -101], tol=5, timeout=None, pause=0),  # dip
-                    JointPathWaypoint(q=[-133,   8, -88,  -1, -85], tol=5, timeout=None, pause=0),  # swipe paint
-                    JointPathWaypoint(q=[-128,  24, -92,  -1, -86], tol=5, timeout=None, pause=0),  # swipe paint
-                    JointPathWaypoint(q=[-120,  32, -93,  -1, -87], tol=5, timeout=None, pause=0),  # swipe paint
+                    # JointPathWaypoint(q=[-133,   8, -88,  -1, -85], tol=5, timeout=None, pause=0),  # swipe paint
+                    # JointPathWaypoint(q=[-128,  24, -92,  -1, -86], tol=5, timeout=None, pause=0),  # swipe paint
+                    # JointPathWaypoint(q=[-120,  32, -93,  -1, -87], tol=5, timeout=None, pause=0),  # swipe paint
                     JointPathWaypoint(q=[-146,  20, -49,  -1, -122], tol=5, timeout=None, pause=0),  # hover paint
 
                     *[JointPathWaypoint(q=q, tol=5, timeout=None, pause=0) for q in reversed(Arm.PREP_TO_DIP)]
@@ -451,9 +451,13 @@ class Arm(AX12s):
 
             # JointPathWaypoint(q=[-142,  23, -105,  -1, -77], tol=5, timeout=None, pause=0),  # swipe paint
             # JointPathWaypoint(q=[-142,  30, -99,  -1, -84], tol=5, timeout=None, pause=0),  # swipe paint
-            JointPathWaypoint(q=[-133,   8, -88,  -1, -85], tol=5, timeout=None, pause=0),  # swipe paint
-            JointPathWaypoint(q=[-128,  24, -92,  -1, -86], tol=5, timeout=None, pause=0),  # swipe paint
-            JointPathWaypoint(q=[-120,  32, -93,  -1, -87], tol=5, timeout=None, pause=0),  # swipe paint
+
+
+            # JointPathWaypoint(q=[-133,   8, -88,  -1, -85], tol=5, timeout=None, pause=0),  # swipe paint
+            # JointPathWaypoint(q=[-128,  24, -92,  -1, -86], tol=5, timeout=None, pause=0),  # swipe paint
+            # JointPathWaypoint(q=[-120,  32, -93,  -1, -87], tol=5, timeout=None, pause=0),  # swipe paint
+
+
             # JointPathWaypoint(q=[-120,  21, -95,  -1, -79], tol=5, timeout=None, pause=0),  # swipe paint
             # JointPathWaypoint(q=[-150,  20, -90,  -1, -90], tol=5, timeout=None, pause=0),  # swipe paint
             # JointPathWaypoint(q=[-150,  27, -87,  -1, -100], tol=5, timeout=None, pause=0),  # swipe paint
