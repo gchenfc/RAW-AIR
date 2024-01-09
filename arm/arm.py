@@ -491,7 +491,7 @@ class Arm(AX12s):
         def go_to_canvas_alt(goal, center=center, angle=-np.pi / 2, elbow_mode='neg', ik_params={}, **kwargs):
             j = self.canvas2joint(goal, center=center, angle=angle, elbow_mode=elbow_mode)
             assert abs(j[0]) < 1e-1, "FAILED, j[0] != 0, " + str(j)
-            j[0] = 5
+            j[0] = -5
             return self.go_to_blocking(j, **kwargs)
 
         def prep():
