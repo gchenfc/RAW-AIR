@@ -3,7 +3,7 @@ let units_to_m = 0.001;
 // let gcode_translate = { X: 2, Y: 0 }, gcode_scale = 2;
 // let gcode_translate = { X: 2.45, Y: 0.9 }, gcode_scale = 1.0;
 // let gcode_translate = { X: BOUNDS.X[0], Y: BOUNDS.Y[0] }, gcode_scale_x = 1.0, gcode_scale_y = 1.0;
-let gcode_translate = { X: 1.9667, Y: 0.6685 }, gcode_scale_x = 1.0, gcode_scale_y = 1.0;
+let gcode_translate = { X: 0, Y: 0 }, gcode_scale_x = 1.0, gcode_scale_y = 1.0;
 let homography = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 
 function updateValue(id, target, message, checkPositive = false) {

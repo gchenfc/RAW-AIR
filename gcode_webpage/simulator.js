@@ -1,7 +1,8 @@
 // const W = 1,
 //   H = 0.7;
-const W = 5.8,
-  H = 3.7;
+// const W = 5.8,
+//   H = 3.7;
+const W = 5.29, H = 4.91;
 const SCALE = 500;
 const BRUSH_DIAMETER = 0.025; // mm
 const CURSOR_SIZE = 40; // Units
@@ -9,7 +10,12 @@ const CURSOR_SIZE = 40; // Units
 // BOUNDS = {Y: [0.70, 2.3], X: [2.0, 3.93]}
 // BOUNDS = {Y: [0.65, 2.35], X: [1.9, 3.98]}
 // These are limits without 60mm buffer, but brush-radius buffer
-BOUNDS = {Y: [0.628, 2.411], X: [1.9262, 4.0222]}
+// BOUNDS = {Y: [0.628, 2.411], X: [1.9262, 4.0222]}
+ALL_BOUNDS = [{X: [1.96670, 3.98170], Y: [0.66850, 2.36460]}, // bottom
+              {X: [1.96670, 3.98170], Y: [2.54810, 4.24420]}, // top
+              {X: [0.98880, 1.77050], Y: [1.60830, 3.30440]}, // left
+              {X: [4.17790, 4.95960], Y: [1.60830, 3.30440]}, // right
+            ];
 
 // Get the canvas with ID "previewCanvas"
 const canvas = document.getElementById("previewCanvas");
@@ -31,7 +37,9 @@ ctx.fillRect(0, 0, SCALE * W, SCALE * H);
 function drawWorkspace() {
   ctx.fillStyle = "none";
   ctx.strokeStyle = "#888";
-  ctx.rect(BOUNDS.X[0] * SCALE, (H - BOUNDS.Y[1]) * SCALE, (BOUNDS.X[1] - BOUNDS.X[0]) * SCALE, (BOUNDS.Y[1] - BOUNDS.Y[0]) * SCALE);
+  for (const bounds of ALL_BOUNDS) {
+    ctx.rect(bounds.X[0] * SCALE, (H - bounds.Y[1]) * SCALE, (bounds.X[1] - bounds.X[0]) * SCALE, (bounds.Y[1] - bounds.Y[0]) * SCALE);
+  }
 }
 
 function drawCommands(lines) {
