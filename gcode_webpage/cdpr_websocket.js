@@ -1,5 +1,5 @@
 
-const HOST = '192.168.0.12'
+const HOST = '143.215.95.166'
 const websocket = new WebSocket("ws://" + HOST + ":5900/");
 
 function send_line(line) {

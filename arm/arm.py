@@ -94,7 +94,14 @@ class Arm(AX12s):
             actual = angles_in
         if angles_out is not None:
             angles_out[:] = actual
-        return all([abs(g - a) < tol for g, a in zip(goal, actual)])
+
+        ok = all([abs(g - a) < tol for g, a in zip(goal, actual)])
+        if not ok:
+            def format(l):
+                return ','.join([f'{x:.0f}' for x in l])
+            waiting = [i for i, (g, a) in enumerate(zip(goal, actual)) if abs(g - a) >= tol]
+            print("waiting on motor #", waiting, f"\tgoal[{format(goal)}] actual[{format(actual)}] tol={tol}")
+        return ok
 
     ############################ GO TO ############################
 
@@ -305,7 +312,8 @@ class Arm(AX12s):
     # PREP_TO_DIP = [[0, 65, -38, 0, -90]]
     # PREP_TO_DIP = [[-61,  72, -47,  -1, -123], [-132,  27, -56,  -1, -124]]
     # PREP_TO_DIP = [[-61,  72, -52,  -1, -118], [-132,  27, -56,  -1, -124]]
-    PREP_TO_DIP = [[-61,  72, -52,  -1, -108]]#, [-132,  27, -56,  -1, -124]]
+    PREP_TO_DIP = [[-61,  72, -52,  -1, -100],
+                   [-90,  72, -62,  -1, -100]]#, [-132,  27, -56,  -1, -124]]
     # PREP_TO_DIP = [[0,  67, -38,  -1, -75], [-69,  84, -79,  -1, -75], [-132,  27, -56,  -1, -124]]
 
     def current_configuration(self):
@@ -376,21 +384,23 @@ class Arm(AX12s):
         verbosity=0,
         vmax=100,
     ):
-        if self.current_configuration() == 'PAINT':
+        # if self.current_configuration() == 'PAINT':
+        if self.current_configuration() != 'PREP_PAINT':
             assert self.do_prep_paint()
         if self.current_configuration() == 'PREP_PAINT':
-            path = [*[JointPathWaypoint(q=q, tol=5, timeout=None, pause=0) for q in Arm.PREP_TO_DIP],
+            path = [*[JointPathWaypoint(q=q, tol=5, timeout=2, pause=0) for q in Arm.PREP_TO_DIP],
 
-                    JointPathWaypoint(q=[-146,  20, -49,  -1, -122], tol=5, timeout=None, pause=0),  # hover paint
+                    JointPathWaypoint(q=[-146,  20, -49,  -1, -122], tol=5, timeout=5, pause=0),  # hover paint
                     JointPathWaypoint(q=[-146, -28, -55,  -1, -101], tol=5, timeout=None, pause=0),  # dip
                     # JointPathWaypoint(q=[-133,   8, -88,  -1, -85], tol=5, timeout=None, pause=0),  # swipe paint
                     # JointPathWaypoint(q=[-128,  24, -92,  -1, -86], tol=5, timeout=None, pause=0),  # swipe paint
                     # JointPathWaypoint(q=[-120,  32, -93,  -1, -87], tol=5, timeout=None, pause=0),  # swipe paint
                     JointPathWaypoint(q=[-146,  20, -49,  -1, -122], tol=5, timeout=None, pause=0),  # hover paint
 
-                    *[JointPathWaypoint(q=q, tol=5, timeout=None, pause=0) for q in reversed(Arm.PREP_TO_DIP)]
+                    *[JointPathWaypoint(q=q, tol=5, timeout=2, pause=0) for q in reversed(Arm.PREP_TO_DIP)]
                     ]
             return self.execute_joint_path(path, verbosity=verbosity, default_speed=vmax) and self.do_prep_paint()
+        # Now dead code
         if self.current_configuration() != 'HOME':
             assert self.do_move_home()
         # path = [
@@ -475,7 +485,7 @@ class Arm(AX12s):
         def prep():
             config = self.current_configuration()
             if config == 'PAINT':
-                return self.go_to_canvas_blocking([0, -0.05, 0.04], angle=-1.45, **kwargs)
+                return self.go_to_canvas_blocking([0, -0.05, 0.02], angle=-1.45, **kwargs)
             elif config == 'STORAGE':
                 return self.do_move_home()
             elif config == 'HOME':
@@ -500,7 +510,7 @@ class Arm(AX12s):
                 kwargs2 = {k:v for k,v in kwargs.items() if k != 'angle'}
                 # return self.go_to_canvas_blocking([0, -0.05, 0.05], angle=-np.pi/2 + 0.2, tol=2, **kwargs2)
                 # assert go_to_canvas_alt([0, -0.05, 0.04], angle=-np.pi/2 + 0.2, tol=5, **kwargs2)
-                assert go_to_canvas_alt([0, -0.05, 0.03], angle=-np.pi/2 + 0.2, tol=5, **kwargs2)
+                assert go_to_canvas_alt([0, -0.05, 0.02], angle=-np.pi/2 + 0.2, tol=5, timeout=5, **kwargs2)
                 # self.set_compliance_slopes(8)
                 # # time.sleep(0.5)
                 # # self.set_compliance_slopes(1)
@@ -512,4 +522,4 @@ class Arm(AX12s):
             else:
                 return self.do_prep_paint()
 
-        return (prep() and self.go_to_canvas_blocking([0, 0, 0], **kwargs))
+        return (prep() and self.go_to_canvas_blocking([0, -0.01, 0], timeout=10, **kwargs))

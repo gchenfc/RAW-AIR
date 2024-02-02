@@ -63,11 +63,13 @@ kKL16;kKm225;kKM450
 Set all controller modes:
 ```
 gs0;ts0.04;gs1;ts0.04;gs2;ts0.04;gs0
-gs0;kKp10000;kKd500;kKi0;kKw0;gs1;kKp10000;kKd500;kKi0;kKw0;gs2;kKp10000;kKd500;kKi0;kKw0;gs0
+gs0;kKp15000;kKd500;kKi0;kKw0;gs1;kKp15000;kKd500;kKi0;kKw0;gs2;kKp15000;kKd500;kKi0;kKw0;gs0
+gs0;kKp15000;kKd1000;kKi0;kKw0;gs1;kKp15000;kKd1000;kKi0;kKw0;gs2;kKp15000;kKd1000;kKi0;kKw0;gs0
 gs0;kd0.25;xd0.05;gs1;kd0.25;xd0.05;gs2;kd0.25;xd0.05;gs0
 gs0;kKL16;kKm200;kKM300;gs1;kKL16;kKm200;kKM300;gs2;kKL16;kKm200;kKM300;gs0
 gs1;xA0.03;gs0
 gs0;xs0.1;xa0.5;gs0
+gs0;xld0;xlu0;xlr0;xll0;gs1;xld0;xlu0;xlr0;xll0;gs2;xld0;xlu0;xlr0;xll0;gs0
 0n15c10,15;1n15c10,30;2n15c10,30;3n15c10,15
 ```
 
